@@ -1,0 +1,15 @@
+### Crear agencia
+POST http://127.0.0.1:8000/agencias/
+Content-Type: application/json
+
+{
+  "nombre": "Agencia Central",
+  "ciudad": "Asunción",
+  "activa": true
+}
+
+### Listar clientes
+GET http://127.0.0.1:8000/clientes/?pagina=1
+
+### Buscar cliente por email
+GET http://127.0.0.1:8000/clientes/email/juan.perez@gmail.com
