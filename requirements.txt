@@ -1,0 +1,46 @@
+# =====================================================
+# DEPENDENCIAS - SISTEMA RULETA DE PREMIOS
+# =====================================================
+# Instalar con: pip install -r requirements.txt
+#
+# ⚠️  WINDOWS: psycopg2-binary puede fallar si no tienes
+#     Microsoft C++ Build Tools instalado.
+#     Solución recomendada → usar psycopg2 precompilado:
+#       pip install psycopg2-binary --only-binary=:all:
+#     Si sigue fallando, instala el driver alternativo:
+#       pip install psycopg[binary]
+# =====================================================
+
+# ── Framework API REST ────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# ── Base de datos ─────────────────────────────────
+sqlalchemy==2.0.35
+alembic==1.13.3               # Migraciones de base de datos
+
+# Driver PostgreSQL — elegir UNO según tu sistema:
+#
+#   OPCIÓN A (recomendada en Windows) → psycopg3 con binarios precompilados
+psycopg[binary]==3.2.3
+#
+#   OPCIÓN B (Linux/Mac o si tienes C++ Build Tools en Windows)
+#   Descomenta la línea de abajo y comenta la OPCIÓN A:
+# psycopg2-binary==2.9.9
+
+# ── Validación y configuración ────────────────────
+pydantic==2.9.2
+email-validator==2.2.0        # Validación de emails (requerido por pydantic[email])
+pydantic-settings==2.5.2      # Lectura de variables desde .env
+python-multipart==0.0.12      # Recibir archivos XLSX/CSV en endpoints
+
+# ── Importación masiva (Semana 2) ─────────────────
+openpyxl==3.1.5               # Lectura de archivos .xlsx
+pandas==2.2.3                 # Procesamiento de CSV/XLSX
+
+# ── Envío de correos (Semana 2) ───────────────────
+fastapi-mail==1.4.1
+
+# ── Utilidades ────────────────────────────────────
+python-dotenv==1.0.1          # Carga de variables desde .env
+httpx==0.27.2                 # Cliente HTTP para testing
