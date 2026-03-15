@@ -12,7 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database.database import engine, Base
-from app.models import models  # noqa: F401 - registra todos los modelos ORM
+from app.models import models  
+# noqa: F401 - registra todos los modelos ORM
 
 # Importar routers
 from app.routers import ruletas

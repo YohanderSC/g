@@ -211,7 +211,8 @@ async def importar_clientes(
     detalle: list[ImportacionFila] = []
 
     for idx, fila in df.iterrows():
-        num_fila = int(idx) + 2   # +2 porque idx=0 es la fila 2 del excel (fila 1 es el header)
+        # +2 porque idx=0 es la fila 2 del excel (fila 1 es el header)
+        num_fila = int(idx) + 2   
         email    = str(fila.get("email", "")).strip()
 
         # Validar email
@@ -248,7 +249,8 @@ async def importar_clientes(
                 estatus   = EstatusCliente.anadido,
             )
             db.add(cliente)
-            db.flush()   # Detectar errores de integridad antes del commit final
+            # Detectar errores de integridad antes del commit final
+            db.flush()   
 
             importados += 1
             detalle.append(ImportacionFila(
