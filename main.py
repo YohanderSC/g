@@ -2,79 +2,82 @@
 =====================================================
 APLICACIÓN PRINCIPAL - SISTEMA DE RULETA DE PREMIOS
 =====================================================
-Descripción: Punto de entrada de la API REST.
-             Configura FastAPI, registra los routers,
-             aplica middlewares y crea las tablas al iniciar.
+Versión: 2.0 (Semana 2)
+Módulos: Ruletas, Clientes, Premios, Agencias,
+         Preguntas de Seguridad
 =====================================================
 """
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database.database import engine, Base
+from app.models import models  # noqa: F401 - registra todos los modelos ORM
+
+# Importar routers
 from app.routers import ruletas
+from app.routers import clientes
+from app.routers import premios
+from app.routers import agencias
+from app.routers import preguntas
 
-# Importar todos los modelos para que SQLAlchemy los registre
-# y cree las tablas correctamente al ejecutar create_all
-from app.models import models  # noqa: F401
-
-# ─────────────────────────────────────────────────────────
-# CREAR TABLAS EN LA BASE DE DATOS
-# Se ejecuta al iniciar la aplicación si las tablas no existen.
-# En producción se recomienda usar Alembic en lugar de create_all.
-# ─────────────────────────────────────────────────────────
+# Crear tablas si no existen (en producción usar Alembic)
 Base.metadata.create_all(bind=engine)
 
 # ─────────────────────────────────────────────────────────
-# INSTANCIA DE LA APLICACIÓN FASTAPI
+# INSTANCIA FASTAPI
 # ─────────────────────────────────────────────────────────
 app = FastAPI(
     title="API Sistema de Ruleta de Premios",
     description="""
-    API REST para gestión de eventos de ruleta de premios.
+API REST para gestión de eventos de ruleta de premios.
 
-    ## Módulos disponibles
-    - 🎡 **Ruletas** — CRUD completo con paginación de 20 registros por página
-    - 👥 **Clientes** — Importación masiva XLSX/CSV, tokens únicos *(Semana 2)*
-    - 🏆 **Premios** — Control de existencias, premios condicionados *(Semana 2)*
-    - 🏢 **Agencias** — Gestión de sucursales *(Semana 2)*
-    - 📧 **Correos** — Envío masivo en lotes de 500 *(Semana 2)*
-    - 📊 **Reportes** — Participación y estadísticas *(Semana 2)*
+## Módulos disponibles
+
+- **RULETAS** — CRUD completo con paginación
+- **CLIENTES** — CRUD + importación masiva XLSX/CSV + búsqueda por email
+- **PREMIOS** — CRUD + control de inventario + premios condicionados
+- **AGENCIAS** — CRUD completo
+- **PREGUNTAS DE SEGURIDAD** — CRUD completo
+- **CORREOS** — Envío individual y masivo en lotes de 500 *(Semana 3)*
+- **RULETA (GIRO)** — Lógica de asignación aleatoria *(Semana 3)*
+- **VAMOS CON TODO HERMANITO LUIS** 
     """,
-    version="1.0.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
 # ─────────────────────────────────────────────────────────
-# MIDDLEWARE CORS
-# Permite peticiones desde el frontend (ajustar en producción)
+# CORS
 # ─────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],        # En producción: especificar el dominio del frontend
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ─────────────────────────────────────────────────────────
-# REGISTRO DE ROUTERS
+# ROUTERS
 # ─────────────────────────────────────────────────────────
-app.include_router(ruletas.router)   # GET/POST/PATCH/DELETE /ruletas/
+app.include_router(ruletas.router)    # /ruletas/
+app.include_router(clientes.router)   # /clientes/
+app.include_router(premios.router)    # /premios/
+app.include_router(agencias.router)   # /agencias/
+app.include_router(preguntas.router)  # /preguntas/
 
 
 # ─────────────────────────────────────────────────────────
-# ENDPOINT RAÍZ — Health check
+# HEALTH CHECK
 # ─────────────────────────────────────────────────────────
 @app.get("/", tags=["Estado"])
 def root():
-    """Verifica que la API está activa y retorna información básica."""
     return {
-        "app": "Sistema de Ruleta de Premios",
-        "version": "1.0.0",
-        "estado": "activa ✅",
-        "docs": "/docs",
-        "debug": settings.APP_DEBUG,
+        "app":     "Sistema de Ruleta de Premios",
+        "version": "2.0.0",
+        "estado":  "activa ✅",
+        "docs":    "/docs",
+        "modulos": ["ruletas", "clientes", "premios", "agencias", "preguntas"],
     }
