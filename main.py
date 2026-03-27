@@ -11,8 +11,10 @@ from app.database.database import engine, Base, SessionLocal
 from app.models import models            # noqa
 from app.models import referido_model_orm  # noqa
 from app.models import admin_model       # noqa — registra tabla administradores
+from app.models import encuesta_model    # noqa — registra tablas encuesta
 
 from app.routers import ruletas, clientes, premios, agencias, preguntas
+from app.routers import encuestas
 from app.routers import ruleta_giro, referidos, auth
 
 Base.metadata.create_all(bind=engine)
@@ -47,6 +49,7 @@ app.include_router(agencias.router)
 app.include_router(preguntas.router)
 app.include_router(ruleta_giro.router)
 app.include_router(referidos.router)
+app.include_router(encuestas.router)
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
 

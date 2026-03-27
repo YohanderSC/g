@@ -7,7 +7,7 @@ Se importa en main.py para que SQLAlchemy cree la tabla.
 =====================================================
 """
 import enum
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -38,9 +38,10 @@ class SolicitudReferido(Base):
     # Una vez aprobado, apunta al cliente creado
     cliente_id       = Column(Integer, ForeignKey("clientes.id"), nullable=True)
 
-    estatus          = Column(SAEnum(EstatusReferido), default=EstatusReferido.pendiente, nullable=False)
-    fecha_solicitud  = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_resolucion = Column(DateTime(timezone=True), nullable=True)
+    estatus           = Column(SAEnum(EstatusReferido), default=EstatusReferido.pendiente, nullable=False)
+    motivo_rechazo    = Column(String(500), nullable=True)   # Razón del rechazo
+    fecha_solicitud   = Column(DateTime(timezone=True), server_default=func.now())
+    fecha_resolucion  = Column(DateTime(timezone=True), nullable=True)
 
     # Relaciones
     referidor = relationship("Cliente", foreign_keys=[referidor_id], lazy="joined")

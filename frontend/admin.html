@@ -212,7 +212,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
   font-size:.88rem;padding:10px 14px;outline:none;
   transition:border-color var(--tr),box-shadow var(--tr);
 }
-.form-row select{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23D4AF37' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;background-color:var(--card2);cursor:pointer}
+.form-row select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23D4AF37' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;background-color:var(--card2);cursor:pointer}
 .form-row select option{background:var(--card2);color:var(--txt)}
 .form-row textarea{resize:vertical;min-height:80px}
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--oro);box-shadow:0 0 0 3px rgba(212,175,55,.12)}
@@ -328,6 +328,10 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
     </div>
 
     <div class="nav-section">Operaciones</div>
+    <div class="nav-item" onclick="ir('encuestas')" id="nav-encuestas">
+      <span class="nav-icon">📋</span><span>Encuestas</span>
+      <span class="nav-badge" id="badge-encuestas">0</span>
+    </div>
     <div class="nav-item" onclick="ir('referidos')" id="nav-referidos">
       <span class="nav-icon">🤝</span><span>Referidos</span>
       <span class="nav-badge" id="badge-referidos">0</span>
@@ -492,6 +496,30 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
         </div>
       </div>
 
+      <!-- ══ ENCUESTAS ══ -->
+      <div class="modulo" id="mod-encuestas">
+        <div class="toolbar">
+          <select id="fil-enc-ruleta" onchange="cargarEncuestas(1)" style="background:var(--card);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;cursor:pointer">
+            <option value="">Todas las ruletas (globales)</option>
+          </select>
+          <button class="btn btn-secondary" onclick="verRespuestasEncuesta()" style="white-space:nowrap">📊 Ver respuestas</button>
+          <button class="btn btn-primary" onclick="abrirFormEncuesta()">+ Nueva pregunta</button>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Pregunta</th><th>Tipo</th><th>Ruleta</th><th>Obligatoria</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tabla-encuestas"></tbody>
+          </table>
+          <div class="paginacion">
+            <span id="pag-info-encuestas">—</span>
+            <div class="pag-btns">
+              <button class="pag-btn" onclick="cambiarPagEnc(-1)">‹</button>
+              <button class="pag-btn" onclick="cambiarPagEnc(1)">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ REFERIDOS ══ -->
       <div class="modulo" id="mod-referidos">
         <div class="toolbar">
@@ -504,7 +532,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
         </div>
         <div class="tabla-wrap">
           <table>
-            <thead><tr><th>ID</th><th>Referidor</th><th>Email referido</th><th>Ruleta</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>ID</th><th>Referidor</th><th>Email referido</th><th>Ruleta</th><th>Estado</th><th>Motivo rechazo</th><th>Fecha</th><th>Acciones</th></tr></thead>
             <tbody id="tabla-referidos"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--txt-dd)">Cargando...</td></tr></tbody>
           </table>
           <div class="paginacion">
@@ -638,6 +666,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     cargarRuletas(1), cargarClientes(1),
     cargarAgencias(1), cargarPreguntas(1),
     cargarReferidos(1),
+    cargarEncuestas(1),
   ]);
   llenarSelectores();
 });
@@ -659,6 +688,7 @@ function ir(mod) {
   if (mod === 'premios') cargarPremios(1);
   if (mod === 'correos') cargarEstadoCorreos();
   if (mod === 'referidos') cargarReferidos(1);
+  if (mod === 'encuestas') cargarEncuestas(1);
   if (mod === 'ganadores') llenarSelectReporte();
 }
 
@@ -1538,6 +1568,18 @@ function recargarMod(mod) {
 }
 
 function llenarSelectores() {
+  // Selector ruleta en encuestas
+  const selEnc = document.getElementById('fil-enc-ruleta');
+  if (selEnc) {
+    const valAct = selEnc.value;
+    selEnc.innerHTML = '<option value="">Todas las ruletas (globales)</option>';
+    ruletasCache.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.textContent = r.nombre;
+      if (String(r.id) === valAct) o.selected = true;
+      selEnc.appendChild(o);
+    });
+  }
   // Selector de ruleta en premios
   const sel = document.getElementById('fil-premios-ruleta');
   if (sel) {
@@ -1585,6 +1627,11 @@ async function cargarReferidos(pag = 1) {
           <td style="font-size:.82rem;color:var(--txt-dd)">#${r.ruleta_id}</td>
           <td><span class="badge ${colEst[r.estatus]}">${icoEst[r.estatus]} ${r.estatus}</span></td>
           <td style="font-size:.78rem;color:var(--txt-dd)">${r.fecha_solicitud?.slice(0,10) || '—'}</td>
+          <td style="font-size:.78rem;max-width:180px">
+            ${r.estatus === 'rechazado' && r.motivo_rechazo
+              ? `<span style="color:#FF8A80;line-height:1.4;display:block">${r.motivo_rechazo}</span>`
+              : '<span style="color:var(--txt-dd)">—</span>'}
+          </td>
           <td><div class="acciones">
             ${r.estatus === 'pendiente' ? `
               <button class="btn btn-primary btn-sm" onclick="aprobarRef(${r.id})" title="Aprobar">✅ Aprobar</button>
@@ -1613,26 +1660,42 @@ async function aprobarRef(id) {
 }
 
 function rechazarRef(id) {
-  document.getElementById('modal-titulo').textContent = 'Rechazar solicitud';
+  document.getElementById('modal-titulo').textContent = 'Rechazar solicitud de referido';
   document.getElementById('modal-body').innerHTML = `
     <p style="color:var(--txt-d);line-height:1.6;margin-bottom:16px">
-      ¿Confirmas el rechazo de la solicitud <strong>#${id}</strong>?
+      El referidor recibirá un correo con el motivo del rechazo.
     </p>
     <div class="form-row">
-      <label>Motivo (opcional)</label>
-      <input id="f-motivo" placeholder="Ej: Email inválido, ya participa en otra ruleta...">
+      <label>Motivo del rechazo <span style="color:var(--rojo)">*</span></label>
+      <textarea id="f-motivo" rows="3" placeholder="Explica brevemente por qué se rechaza la solicitud..."></textarea>
+    </div>
+    <div style="margin-top:8px">
+      <div style="font-size:.72rem;letter-spacing:1px;text-transform:uppercase;color:var(--txt-dd);margin-bottom:8px">Motivos rápidos</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${[
+          'El email ya está registrado en el sistema.',
+          'El evento al que fue referido ya finalizó.',
+          'No cumple los requisitos de participación.',
+          'La solicitud fue enviada por error.',
+          'El referido solicitó no ser contactado.',
+        ].map(m => `<button onclick="document.getElementById('f-motivo').value='${m}'"
+          style="background:var(--card2);border:1px solid var(--border);color:var(--txt-d);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:.75rem;transition:all .2s"
+          onmouseover="this.style.borderColor='var(--oro)';this.style.color='var(--oro)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--txt-d)'">${m}</button>`).join('')}
+      </div>
     </div>`;
   document.getElementById('modal-footer').innerHTML = `
     <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
-    <button class="btn btn-danger" onclick="confirmarRechazo(${id})">Rechazar</button>`;
+    <button class="btn btn-danger" onclick="confirmarRechazo(${id})">Rechazar y notificar</button>`;
   abrirModal();
 }
 
 async function confirmarRechazo(id) {
-  const motivo = document.getElementById('f-motivo')?.value || '';
+  const motivo = document.getElementById('f-motivo')?.value?.trim() || '';
+  if (!motivo) { toast('Ingresa el motivo del rechazo.', 'err'); return; }
   try {
-    await api(`/referidos/${id}/rechazar${motivo ? `?motivo=${encodeURIComponent(motivo)}` : ''}`, { method: 'PATCH' });
-    toast('Solicitud rechazada', 'ok');
+    await api(`/referidos/${id}/rechazar?motivo=${encodeURIComponent(motivo)}`, { method: 'PATCH' });
+    toast('Solicitud rechazada — correo enviado al referidor 📧', 'ok');
     cerrarModal();
     cargarReferidos(pagRef);
   } catch (e) { toast(e.message, 'err'); }
@@ -1671,6 +1734,205 @@ async function eliminarCondicionado(id) {
     // Recargar la lista
     if (formId) cargarCondicionadosExistentes(formId);
   } catch (e) { toast(e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// ENCUESTAS
+// ═══════════════════════════════════════════════════
+let pagEnc = 1, totEnc = 0;
+
+async function cargarEncuestas(pag=1) {
+  pagEnc = pag;
+  const rulId = document.getElementById('fil-enc-ruleta')?.value || '';
+  try {
+    let url = `/encuestas/?pagina=${pag}`;
+    if (rulId) url += `&ruleta_id=${rulId}`;
+    const d = await api(url);
+    totEnc = d.total;
+    document.getElementById('badge-encuestas').textContent = d.total;
+    document.getElementById('pag-info-encuestas').textContent =
+      `${d.total} preguntas — página ${pag} de ${d.paginas_totales}`;
+
+    const tipoCol = { texto_libre:'badge-azul', opcion_multiple:'badge-morado', si_no:'badge-verde', escala:'badge-naranja' };
+    const tipoLbl = { texto_libre:'Texto libre', opcion_multiple:'Opción múltiple', si_no:'Sí / No', escala:'Escala 1-5' };
+
+    document.getElementById('tabla-encuestas').innerHTML = d.datos.length
+      ? d.datos.map((p,i) => `<tr>
+          <td style="color:var(--txt-dd)">#${p.id}</td>
+          <td style="font-size:.88rem;max-width:260px">${p.texto}</td>
+          <td><span class="badge ${tipoCol[p.tipo]}">${tipoLbl[p.tipo]}</span></td>
+          <td style="font-size:.8rem;color:var(--txt-dd)">${p.ruleta_id ? `#${p.ruleta_id}` : 'Global'}</td>
+          <td style="text-align:center">${p.obligatoria ? '<span style="color:var(--rojo)">●</span>' : '<span style="color:var(--txt-dd)">○</span>'}</td>
+          <td>${p.activa ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td>
+          <td><div class="acciones">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarEncuesta(${p.id})" title="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEncuesta(${p.id},'${p.texto.slice(0,30)}...')" title="Eliminar">🗑️</button>
+          </div></td>
+        </tr>`).join('')
+      : `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">Sin preguntas de encuesta</div></div></td></tr>`;
+  } catch(e) { toast('Error cargando encuestas: '+e.message, 'err'); }
+}
+
+function cambiarPagEnc(dir) {
+  const maxPag = Math.ceil(totEnc/20), nueva = pagEnc+dir;
+  if (nueva<1||nueva>maxPag) return;
+  cargarEncuestas(nueva);
+}
+
+function abrirFormEncuesta(data={}) {
+  const esEdicion = !!data.id;
+  const opcAct = data.opciones?.join('') || '';
+  document.getElementById('modal-titulo').textContent = esEdicion ? 'Editar pregunta' : 'Nueva pregunta de encuesta';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row">
+      <label>Texto de la pregunta</label>
+      <textarea id="ef-texto" rows="3" placeholder="¿Cómo conociste nuestro evento?">${data.texto||''}</textarea>
+    </div>
+    <div class="form-2col">
+      <div class="form-row">
+        <label>Tipo de respuesta</label>
+        <select id="ef-tipo" onchange="toggleOpciones()">
+          <option value="texto_libre" ${data.tipo==='texto_libre'?'selected':''}>Texto libre</option>
+          <option value="opcion_multiple" ${data.tipo==='opcion_multiple'?'selected':''}>Opción múltiple</option>
+          <option value="si_no" ${data.tipo==='si_no'?'selected':''}>Sí / No</option>
+          <option value="escala" ${data.tipo==='escala'?'selected':''}>Escala 1-5</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Ruleta (vacío = global)</label>
+        <select id="ef-ruleta">
+          <option value="">Todas las ruletas</option>
+          ${ruletasCache.map(r=>`<option value="${r.id}" ${data.ruleta_id==r.id?'selected':''}>${r.nombre}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row" id="sec-opciones" style="display:${data.tipo==='opcion_multiple'?'block':'none'}">
+      <label>Opciones (una por línea)</label>
+      <textarea id="ef-opciones" rows="4" placeholder="Redes sociales
+Correo electrónico
+Un amigo">${opcAct}</textarea>
+      <div class="form-hint">Cada línea es una opción de respuesta</div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:4px">
+      <div class="toggle-row" style="flex:1">
+        <span class="toggle-label">Obligatoria</span>
+        <label class="toggle"><input type="checkbox" id="ef-oblig" ${data.obligatoria?'checked':''}><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row" style="flex:1">
+        <span class="toggle-label">Activa</span>
+        <label class="toggle"><input type="checkbox" id="ef-activa" ${data.activa!==false?'checked':''}><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:12px">
+      <label>Orden (número)</label>
+      <input id="ef-orden" type="number" value="${data.orden||0}" min="0" style="max-width:120px">
+      <div class="form-hint">Menor número = aparece primero</div>
+    </div>`;
+
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarEncuesta(${data.id||null})">
+      ${esEdicion?'Guardar cambios':'Crear pregunta'}
+    </button>`;
+  abrirModal();
+}
+
+function toggleOpciones() {
+  const tipo = document.getElementById('ef-tipo').value;
+  document.getElementById('sec-opciones').style.display = tipo==='opcion_multiple' ? 'block' : 'none';
+}
+
+async function editarEncuesta(id) {
+  try {
+    const d = await api(`/encuestas/?pagina=1`);
+    const p = d.datos.find(x=>x.id===id);
+    if (p) abrirFormEncuesta(p);
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
+
+async function guardarEncuesta(id) {
+  const texto = document.getElementById('ef-texto').value.trim();
+  if (!texto) { toast('Ingresa el texto de la pregunta','err'); return; }
+
+  const tipo    = document.getElementById('ef-tipo').value;
+  const opcsRaw = document.getElementById('ef-opciones')?.value || '';
+  const opciones = tipo==='opcion_multiple'
+    ? opcsRaw.split('').map(s=>s.trim()).filter(Boolean)
+    : null;
+
+  const payload = {
+    texto,
+    tipo,
+    opciones,
+    obligatoria: document.getElementById('ef-oblig').checked,
+    activa:      document.getElementById('ef-activa').checked,
+    orden:       parseInt(document.getElementById('ef-orden').value||0),
+    ruleta_id:   parseInt(document.getElementById('ef-ruleta').value)||null,
+  };
+
+  try {
+    if (id) {
+      await api(`/encuestas/${id}`, { method:'PATCH', body:JSON.stringify(payload) });
+      toast('Pregunta actualizada ✅','ok');
+    } else {
+      await api('/encuestas/', { method:'POST', body:JSON.stringify(payload) });
+      toast('Pregunta creada ✅','ok');
+    }
+    cerrarModal();
+    cargarEncuestas(pagEnc);
+  } catch(e) { toast(e.message,'err'); }
+}
+
+async function eliminarEncuesta(id, texto) {
+  document.getElementById('modal-titulo').textContent = 'Eliminar pregunta';
+  document.getElementById('modal-body').innerHTML = `
+    <p style="color:var(--txt-d);line-height:1.6;margin-bottom:10px">
+      ¿Eliminar la pregunta <strong style="color:var(--txt)">"${texto}"</strong>?
+    </p>
+    <p style="font-size:.82rem;color:var(--rojo)">⚠️ Las respuestas guardadas no se eliminarán.</p>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-danger" onclick="confirmarEliminarEncuesta(${id})">Eliminar</button>`;
+  abrirModal();
+}
+
+async function confirmarEliminarEncuesta(id) {
+  try {
+    await api(`/encuestas/${id}`, { method:'DELETE' });
+    toast('Pregunta eliminada','ok');
+    cerrarModal();
+    cargarEncuestas(pagEnc);
+  } catch(e) { toast(e.message,'err'); }
+}
+
+async function verRespuestasEncuesta() {
+  try {
+    const d = await api('/encuestas/respuestas/?pagina=1');
+    document.getElementById('modal-titulo').textContent = `Respuestas de encuestas (${d.total})`;
+    document.getElementById('modal-body').innerHTML = d.datos.length
+      ? `<div style="max-height:420px;overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+            <thead><tr style="background:var(--card2)">
+              <th style="padding:8px 12px;text-align:left;color:var(--txt-dd)">Pregunta</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--txt-dd)">Respuesta</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--txt-dd)">Cliente</th>
+              <th style="padding:8px 12px;text-align:left;color:var(--txt-dd)">Fecha</th>
+            </tr></thead>
+            <tbody>${d.datos.map((r,i)=>`
+              <tr style="border-top:1px solid var(--border);background:${i%2===0?'var(--card2)':'transparent'}">
+                <td style="padding:8px 12px;color:var(--txt-d)">${r.pregunta}</td>
+                <td style="padding:8px 12px;color:var(--txt);font-weight:600">${r.respuesta}</td>
+                <td style="padding:8px 12px;color:var(--txt-dd);font-size:.78rem">${r.cliente_email}</td>
+                <td style="padding:8px 12px;color:var(--txt-dd);font-size:.75rem">${r.fecha?.slice(0,16)||'—'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`
+      : '<div class="empty"><div class="empty-icon">📊</div><div class="empty-msg">Sin respuestas aún</div></div>';
+    document.getElementById('modal-footer').innerHTML =
+      `<button class="btn btn-secondary" onclick="cerrarModal()">Cerrar</button>`;
+    abrirModal();
+  } catch(e) { toast('Error: '+e.message,'err'); }
 }
 </script>
 </body>

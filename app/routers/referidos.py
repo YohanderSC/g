@@ -87,14 +87,15 @@ async def aprobar_referido(solicitud_id: int, db: Session = Depends(get_db)):
 # ── ADMIN: Rechazar ───────────────────────────────
 @router.patch(
     "/{solicitud_id}/rechazar",
-    summary="Rechazar solicitud de referido (Admin)"
+    summary="Rechazar solicitud de referido (Admin)",
+    description="Rechaza la solicitud y envía correo al referidor con el motivo."
 )
-def rechazar_referido(
+async def rechazar_referido(
     solicitud_id: int,
-    motivo: str | None = Query(None, description="Motivo del rechazo (opcional)"),
+    motivo: str | None = Query(None, description="Motivo del rechazo"),
     db: Session = Depends(get_db)
 ):
-    return referido_service.rechazar_referido(db, solicitud_id, motivo)
+    return await referido_service.rechazar_referido(db, solicitud_id, motivo)
 
 
 # ── CLIENTE: Ver mis referidos enviados ───────────

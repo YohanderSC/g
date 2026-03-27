@@ -173,7 +173,7 @@ async def aprobar_referido(db: Session, solicitud_id: int) -> dict:
 # ─────────────────────────────────────────────────
 # FUNCIÓN: Rechazar solicitud
 # ─────────────────────────────────────────────────
-def rechazar_referido(db: Session, solicitud_id: int, motivo: str | None = None) -> dict:
+async def rechazar_referido(db: Session, solicitud_id: int, motivo: str | None = None) -> dict:
     from app.models.referido_model_orm import SolicitudReferido, EstatusReferido
 
     solicitud = db.query(SolicitudReferido).filter(
@@ -185,9 +185,84 @@ def rechazar_referido(db: Session, solicitud_id: int, motivo: str | None = None)
         raise HTTPException(status_code=400,
                             detail=f"La solicitud ya fue procesada (estatus: {solicitud.estatus.value}).")
 
+    motivo_final = motivo or "No cumple los requisitos para participar en esta oportunidad."
     solicitud.estatus          = EstatusReferido.rechazado
+    solicitud.motivo_rechazo   = motivo_final
     solicitud.fecha_resolucion = datetime.utcnow()
     db.commit()
+
+    # Notificar al referidor por correo
+    try:
+        from app.models.models import CorreoLog, TipoCorreo, EstadoCorreo
+        from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+        from app.config import settings
+
+        referidor  = solicitud.referidor
+        if referidor:
+            nombre_ref = referidor.nombres or referidor.email.split("@")[0]
+            nombre_inv = solicitud.nombres_referido or solicitud.email_referido
+
+            asunto = f"Actualizacion sobre tu referido - {nombre_inv}"
+            cuerpo = f"""<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0D0D14;font-family:'Segoe UI',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0D0D14;padding:40px 20px">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#12121A;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.08)">
+        <tr><td style="background:#1C1C28;padding:28px 32px;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:rgba(240,237,232,.4);margin-bottom:8px">Notificacion de referido</div>
+          <h2 style="margin:0;color:#F0EDE8;font-size:1.3rem;font-weight:700">Actualizacion sobre tu referido</h2>
+        </td></tr>
+        <tr><td style="padding:32px">
+          <p style="color:#F0EDE8;font-size:1rem;margin:0 0 14px">Hola, <strong style="color:#D4AF37">{nombre_ref}</strong></p>
+          <p style="color:rgba(240,237,232,.65);font-size:.9rem;line-height:1.7;margin:0 0 22px">
+            Gracias por referir a <strong style="color:#F0EDE8">{nombre_inv}</strong>.<br>
+            Lamentablemente, la solicitud no pudo ser aprobada en esta oportunidad.
+          </p>
+          <div style="background:#1C1C28;border:1px solid rgba(231,76,60,.2);border-left:3px solid #E74C3C;border-radius:10px;padding:16px 18px;margin-bottom:22px">
+            <div style="font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:rgba(231,76,60,.7);margin-bottom:6px">Motivo del rechazo</div>
+            <div style="color:#F0EDE8;font-size:.9rem;line-height:1.5">{motivo_final}</div>
+          </div>
+          <p style="color:rgba(240,237,232,.45);font-size:.82rem;line-height:1.6;margin:0">
+            Si tienes dudas, comunicate con nosotros respondiendo este correo.
+          </p>
+        </td></tr>
+        <tr><td style="background:#0A0A0F;padding:16px 32px;border-top:1px solid rgba(255,255,255,.06)">
+          <p style="color:rgba(240,237,232,.2);font-size:.72rem;text-align:center;margin:0">
+            2026 Ruleta de Premios
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+
+            config_mail = ConnectionConfig(
+                MAIL_USERNAME   = settings.MAIL_USERNAME,
+                MAIL_PASSWORD   = settings.MAIL_PASSWORD,
+                MAIL_FROM       = settings.MAIL_FROM,
+                MAIL_FROM_NAME  = settings.MAIL_FROM_NAME,
+                MAIL_PORT       = settings.MAIL_PORT,
+                MAIL_SERVER     = settings.MAIL_SERVER,
+                MAIL_STARTTLS   = settings.MAIL_TLS,
+                MAIL_SSL_TLS    = settings.MAIL_SSL,
+                USE_CREDENTIALS = True,
+            )
+            await FastMail(config_mail).send_message(MessageSchema(
+                subject    = asunto,
+                recipients = [referidor.email],
+                body       = cuerpo,
+                subtype    = "html",
+            ))
+            log = CorreoLog(
+                cliente_id = referidor.id,
+                tipo       = TipoCorreo.reenvio,
+                estado     = EstadoCorreo.enviado,
+                asunto     = asunto,
+            )
+            db.add(log)
+            db.commit()
+    except Exception:
+        pass   # correo es informativo, no interrumpe el rechazo
 
     return _serializar(solicitud, db)
 
@@ -236,6 +311,7 @@ def _serializar(s, db) -> dict:
         "referidor_nombre": nombre_ref,
         "ruleta_id":        s.ruleta_id,
         "estatus":          s.estatus.value,
+        "motivo_rechazo":   s.motivo_rechazo if s.estatus.value == "rechazado" else None,
         "fecha_solicitud":  str(s.fecha_solicitud),
         "fecha_resolucion": str(s.fecha_resolucion) if s.fecha_resolucion else None,
         "cliente_id":       s.cliente_id,
