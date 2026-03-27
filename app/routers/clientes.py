@@ -141,16 +141,35 @@ def editar_cliente(cliente_id: int, datos: ClienteUpdate, db: Session = Depends(
 # ──────────────────────────────────────────────────────
 # ENDPOINT 6: ELIMINAR CLIENTE
 # ──────────────────────────────────────────────────────
-@router.delete("/{cliente_id}", status_code=status.HTTP_200_OK, summary="Eliminar cliente")
+@router.delete("/{cliente_id}", status_code=status.HTTP_200_OK,
+               summary="Eliminar cliente")
 def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina un cliente. Si tiene registros relacionados
+    (participaciones, correos, etc.) devuelve error descriptivo.
+    """
+    from sqlalchemy.exc import IntegrityError
+
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cliente:
-        raise HTTPException(status_code=404, detail=f"Cliente {cliente_id} no encontrado.")
-    db.delete(cliente)
-    db.commit()
-    return {"mensaje": f"Cliente {cliente_id} eliminado.", "id_eliminado": cliente_id}
+        raise HTTPException(status_code=404,
+                            detail=f"Cliente {cliente_id} no encontrado.")
 
+    try:
+        db.delete(cliente)
+        db.commit()
+        return {"mensaje": f"Cliente {cliente_id} eliminado.", "id_eliminado": cliente_id}
 
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"No se puede eliminar el cliente '{cliente.email}' porque tiene "
+                "registros relacionados (participaciones, correos, etc.). "
+                "Elimina primero esos registros o desactiva el cliente en lugar de eliminarlo."
+            )
+        )
 # ──────────────────────────────────────────────────────
 # ENDPOINT 7: IMPORTACIÓN MASIVA XLSX / CSV
 # POST /clientes/importar/
@@ -211,8 +230,7 @@ async def importar_clientes(
     detalle: list[ImportacionFila] = []
 
     for idx, fila in df.iterrows():
-        # +2 porque idx=0 es la fila 2 del excel (fila 1 es el header)
-        num_fila = int(idx) + 2   
+        num_fila = int(idx) + 2   # +2 porque idx=0 es la fila 2 del excel (fila 1 es el header)
         email    = str(fila.get("email", "")).strip()
 
         # Validar email
@@ -249,8 +267,7 @@ async def importar_clientes(
                 estatus   = EstatusCliente.anadido,
             )
             db.add(cliente)
-            # Detectar errores de integridad antes del commit final
-            db.flush()   
+            db.flush()   # Detectar errores de integridad antes del commit final
 
             importados += 1
             detalle.append(ImportacionFila(

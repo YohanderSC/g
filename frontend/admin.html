@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Ruleta de Premios</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --oro:#D4AF37;--oro-l:#F5D76E;--oro-d:#9A7B1A;
+  --bg:#0D0D14;--sidebar:#0A0A0F;--card:#13131E;--card2:#1A1A28;
+  --border:rgba(255,255,255,.07);--border-oro:rgba(212,175,55,.2);
+  --txt:#F0EDE8;--txt-d:rgba(240,237,232,.5);--txt-dd:rgba(240,237,232,.28);
+  --verde:#27AE60;--verde-p:rgba(39,174,96,.12);
+  --rojo:#E74C3C;--rojo-p:rgba(231,76,60,.12);
+  --azul:#3498DB;--azul-p:rgba(52,152,219,.12);
+  --naranja:#E67E22;--naranja-p:rgba(230,126,34,.12);
+  --morado:#9B59B6;--morado-p:rgba(155,89,182,.12);
+  --tr:.22s cubic-bezier(.4,0,.2,1);
+  --r:12px;
+}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow:hidden}
+
+/* ── LAYOUT ─────────────────────────────────── */
+.shell{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ─────────────────────────────────── */
+.sidebar{
+  width:220px;min-width:220px;background:var(--sidebar);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;
+  transition:width var(--tr);z-index:100;
+}
+.sidebar-logo{
+  padding:22px 20px 16px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-logo .logo-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.3rem;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--oro-l),var(--oro));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.sidebar-logo .logo-sub{font-size:.68rem;color:var(--txt-dd);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+
+.nav-section{padding:16px 12px 4px;font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--txt-dd);font-weight:600}
+
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;margin:2px 8px;border-radius:10px;
+  cursor:pointer;transition:all var(--tr);
+  font-size:.88rem;font-weight:500;color:var(--txt-d);
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--card2);color:var(--txt)}
+.nav-item.activo{background:rgba(212,175,55,.1);color:var(--oro);border-color:var(--border-oro)}
+.nav-item .nav-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0}
+.nav-item .nav-badge{
+  margin-left:auto;background:var(--card2);
+  font-size:.65rem;padding:2px 7px;border-radius:999px;
+  color:var(--txt-dd);min-width:22px;text-align:center;
+}
+.nav-item.activo .nav-badge{background:rgba(212,175,55,.15);color:var(--oro)}
+
+.sidebar-footer{
+  margin-top:auto;padding:16px;border-top:1px solid var(--border);
+}
+.sidebar-footer a{
+  display:flex;align-items:center;gap:8px;
+  font-size:.82rem;color:var(--txt-dd);text-decoration:none;
+  padding:8px 10px;border-radius:8px;transition:all var(--tr);
+}
+.sidebar-footer a:hover{color:var(--oro);background:rgba(212,175,55,.06)}
+
+/* ── MAIN ─────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Topbar */
+.topbar{
+  height:58px;min-height:58px;
+  background:var(--sidebar);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;gap:16px;
+}
+.topbar-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:1px;color:var(--txt)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-btn{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(212,175,55,.1);border:1px solid var(--border-oro);
+  color:var(--oro);border-radius:8px;padding:7px 14px;
+  font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;
+  cursor:pointer;transition:all var(--tr);
+}
+.topbar-btn:hover{background:rgba(212,175,55,.18);box-shadow:0 0 20px rgba(212,175,55,.2)}
+
+/* Contenido */
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* ── MÓDULO (panel) ─────────────────────────── */
+.modulo{display:none}
+.modulo.activo{display:block;animation:fadeUp .3s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── STATS ROW ─────────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:18px 20px;position:relative;overflow:hidden;
+}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--oro))}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:1px;color:var(--txt);line-height:1}
+.stat-label{font-size:.75rem;color:var(--txt-dd);margin-top:4px;letter-spacing:.5px;text-transform:uppercase}
+
+/* ── TOOLBAR ─────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:8px 14px;flex:1;min-width:200px;
+}
+.search-box input{
+  background:transparent;border:none;outline:none;color:var(--txt);
+  font-family:'DM Sans',sans-serif;font-size:.88rem;width:100%;
+}
+.search-box input::placeholder{color:var(--txt-dd)}
+.search-icon{color:var(--txt-dd);font-size:.9rem}
+
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 16px;border:none;border-radius:9px;
+  font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;
+  cursor:pointer;transition:all var(--tr);white-space:nowrap;
+}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--oro-d),var(--oro));color:#000;box-shadow:0 3px 12px rgba(212,175,55,.25)}
+.btn-primary:hover:not(:disabled){box-shadow:0 4px 20px rgba(212,175,55,.4);transform:translateY(-1px)}
+.btn-secondary{background:var(--card2);color:var(--txt);border:1px solid var(--border)}
+.btn-secondary:hover:not(:disabled){border-color:rgba(255,255,255,.18);color:var(--txt)}
+.btn-danger{background:var(--rojo-p);color:var(--rojo);border:1px solid rgba(231,76,60,.2)}
+.btn-danger:hover:not(:disabled){background:rgba(231,76,60,.22)}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.btn-icon{padding:7px 9px;border-radius:8px}
+
+/* ── TABLA ─────────────────────────────── */
+.tabla-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.tabla-wrap table{width:100%;border-collapse:collapse}
+.tabla-wrap th{
+  background:var(--card2);padding:11px 16px;
+  text-align:left;font-size:.72rem;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--txt-dd);
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.tabla-wrap td{
+  padding:12px 16px;font-size:.875rem;color:var(--txt);
+  border-bottom:1px solid var(--border);vertical-align:middle;
+}
+.tabla-wrap tr:last-child td{border-bottom:none}
+.tabla-wrap tr:hover td{background:rgba(255,255,255,.02)}
+.tabla-wrap .acciones{display:flex;gap:6px;align-items:center}
+
+/* ── BADGES ─────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;letter-spacing:.5px}
+.badge-verde{background:var(--verde-p);color:var(--verde)}
+.badge-rojo{background:var(--rojo-p);color:var(--rojo)}
+.badge-azul{background:var(--azul-p);color:var(--azul)}
+.badge-naranja{background:var(--naranja-p);color:var(--naranja)}
+.badge-morado{background:var(--morado-p);color:var(--morado)}
+.badge-oro{background:rgba(212,175,55,.12);color:var(--oro)}
+
+/* ── PAGINACIÓN ─────────────────────────── */
+.paginacion{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:.8rem;color:var(--txt-dd)}
+.pag-btns{display:flex;gap:6px}
+.pag-btn{background:var(--card2);border:1px solid var(--border);color:var(--txt);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:.8rem;transition:all var(--tr)}
+.pag-btn:hover:not(:disabled){border-color:var(--oro);color:var(--oro)}
+.pag-btn:disabled{opacity:.35;cursor:not-allowed}
+.pag-btn.activo{background:rgba(212,175,55,.1);border-color:var(--border-oro);color:var(--oro)}
+
+/* ── MODAL ─────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:1000;display:none;align-items:center;justify-content:center;
+  padding:20px;backdrop-filter:blur(4px);
+}
+.modal-overlay.abierto{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--card);border:1px solid var(--border-oro);
+  border-radius:18px;width:100%;max-width:520px;
+  max-height:90vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,.7);
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{
+  padding:22px 24px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-header h3{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:1px;color:var(--txt)}
+.modal-close{background:var(--card2);border:1px solid var(--border);color:var(--txt-d);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
+.modal-close:hover{color:var(--rojo);border-color:rgba(231,76,60,.3)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+/* ── FORM ─────────────────────────────── */
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--oro);margin-bottom:7px}
+.form-row input,.form-row select,.form-row textarea{
+  width:100%;background:var(--card2);border:1px solid var(--border);
+  border-radius:9px;color:var(--txt);font-family:'DM Sans',sans-serif;
+  font-size:.88rem;padding:10px 14px;outline:none;
+  transition:border-color var(--tr),box-shadow var(--tr);
+}
+.form-row select{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23D4AF37' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;background-color:var(--card2);cursor:pointer}
+.form-row select option{background:var(--card2);color:var(--txt)}
+.form-row textarea{resize:vertical;min-height:80px}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--oro);box-shadow:0 0 0 3px rgba(212,175,55,.12)}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-hint{font-size:.75rem;color:var(--txt-dd);margin-top:5px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 14px}
+.toggle-label{font-size:.88rem;color:var(--txt)}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--card);border:1px solid var(--border);border-radius:999px;transition:all var(--tr)}
+.toggle-slider::before{content:'';position:absolute;height:14px;width:14px;left:3px;top:3px;background:var(--txt-dd);border-radius:50%;transition:all var(--tr)}
+.toggle input:checked+.toggle-slider{background:rgba(212,175,55,.2);border-color:var(--oro)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px);background:var(--oro)}
+
+/* ── ALERTA TOAST ─────────────────────── */
+.toast-wrap{position:fixed;top:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:12px 16px;
+  font-size:.85rem;color:var(--txt);
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  display:flex;align-items:center;gap:10px;
+  animation:toastIn .3s ease;pointer-events:auto;
+  max-width:320px;
+  border-left:3px solid var(--border);
+}
+.toast.ok{border-left-color:var(--verde)}
+.toast.err{border-left-color:var(--rojo)}
+.toast.info{border-left-color:var(--oro)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── ESTADO VACÍO ─────────────────────── */
+.empty{text-align:center;padding:48px 24px}
+.empty-icon{font-size:2.5rem;margin-bottom:12px;opacity:.4}
+.empty-msg{font-size:.9rem;color:var(--txt-dd)}
+
+/* ── IMPORT ZONE ─────────────────────── */
+.drop-zone{
+  border:2px dashed var(--border-oro);border-radius:12px;
+  padding:28px;text-align:center;cursor:pointer;
+  transition:all var(--tr);background:rgba(212,175,55,.03);
+}
+.drop-zone:hover,.drop-zone.over{border-color:var(--oro);background:rgba(212,175,55,.07)}
+.drop-zone-icon{font-size:2rem;margin-bottom:8px}
+.drop-zone p{font-size:.85rem;color:var(--txt-d)}
+.drop-zone small{font-size:.75rem;color:var(--txt-dd)}
+#inp-file-import{display:none}
+
+/* ── SCROLLBAR ─────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(212,175,55,.3)}
+
+@media(max-width:768px){
+  .sidebar{width:60px;min-width:60px}
+  .sidebar-logo .logo-title,.sidebar-logo .logo-sub,.nav-item span,.nav-item .nav-badge,.sidebar-footer a span{display:none}
+  .nav-section{display:none}
+  .nav-item{justify-content:center;padding:12px}
+  .form-2col{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="toast-wrap" id="toasts"></div>
+
+<!-- MODALES -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modal-titulo">Título</h3>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <!-- ════════ SIDEBAR ════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-title">🎡 ADMIN</div>
+      <div class="logo-sub">Ruleta de Premios</div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <div class="nav-item activo" onclick="ir('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </div>
+
+    <div class="nav-section">Gestión</div>
+    <div class="nav-item" onclick="ir('ruletas')" id="nav-ruletas">
+      <span class="nav-icon">🎡</span><span>Ruletas</span>
+      <span class="nav-badge" id="badge-ruletas">0</span>
+    </div>
+    <div class="nav-item" onclick="ir('premios')" id="nav-premios">
+      <span class="nav-icon">🏆</span><span>Premios</span>
+      <span class="nav-badge" id="badge-premios">0</span>
+    </div>
+    <div class="nav-item" onclick="ir('clientes')" id="nav-clientes">
+      <span class="nav-icon">👥</span><span>Clientes</span>
+      <span class="nav-badge" id="badge-clientes">0</span>
+    </div>
+    <div class="nav-item" onclick="ir('agencias')" id="nav-agencias">
+      <span class="nav-icon">🏢</span><span>Agencias</span>
+      <span class="nav-badge" id="badge-agencias">0</span>
+    </div>
+    <div class="nav-item" onclick="ir('preguntas')" id="nav-preguntas">
+      <span class="nav-icon">🔐</span><span>Preguntas</span>
+      <span class="nav-badge" id="badge-preguntas">0</span>
+    </div>
+
+    <div class="nav-section">Operaciones</div>
+    <div class="nav-item" onclick="ir('referidos')" id="nav-referidos">
+      <span class="nav-icon">🤝</span><span>Referidos</span>
+      <span class="nav-badge" id="badge-referidos">0</span>
+    </div>
+    <div class="nav-item" onclick="ir('ganadores')" id="nav-ganadores">
+      <span class="nav-icon">🥇</span><span>Ganadores</span>
+    </div>
+    <div class="nav-item" onclick="ir('correos')" id="nav-correos">
+      <span class="nav-icon">📧</span><span>Correos</span>
+    </div>
+
+    <div class="sidebar-footer">
+      <a href="/frontend" target="_blank">
+        <span>🎰</span><span>Ver Ruleta</span>
+      </a>
+      <a href="/docs" target="_blank">
+        <span>📖</span><span>API Docs</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ════════ MAIN ════════ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <button class="topbar-btn" onclick="recargarActual()">↻ Actualizar</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="modulo activo" id="mod-dashboard">
+        <div class="stats-row" id="stats-dashboard">
+          <div class="stat-card" style="--accent:var(--oro)"><div class="stat-num" id="st-ruletas">—</div><div class="stat-label">Ruletas activas</div></div>
+          <div class="stat-card" style="--accent:var(--azul)"><div class="stat-num" id="st-clientes">—</div><div class="stat-label">Clientes</div></div>
+          <div class="stat-card" style="--accent:var(--verde)"><div class="stat-num" id="st-premios">—</div><div class="stat-label">Premios</div></div>
+          <div class="stat-card" style="--accent:var(--naranja)"><div class="stat-num" id="st-agencias">—</div><div class="stat-label">Agencias</div></div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>Módulo</th><th>Total</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="dash-tabla"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ RULETAS ══ -->
+      <div class="modulo" id="mod-ruletas">
+        <div class="toolbar">
+          <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="q-ruletas" placeholder="Buscar ruleta..." oninput="filtrarTabla('ruletas',this.value)"></div>
+          <button class="btn btn-primary" onclick="abrirForm('ruletas')">+ Nueva Ruleta</button>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Nombre</th><th>Inicio</th><th>Cierre</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tabla-ruletas"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--txt-dd)">Cargando...</td></tr></tbody>
+          </table>
+          <div class="paginacion">
+            <span id="pag-info-ruletas">—</span>
+            <div class="pag-btns">
+              <button class="pag-btn" onclick="cambiarPag('ruletas',-1)">‹</button>
+              <button class="pag-btn" onclick="cambiarPag('ruletas',1)">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PREMIOS ══ -->
+      <div class="modulo" id="mod-premios">
+        <div class="toolbar">
+          <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="q-premios" placeholder="Buscar premio..."></div>
+          <select id="fil-premios-ruleta" onchange="cargarPremios(1)" style="background:var(--card);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;cursor:pointer">
+            <option value="">Todas las ruletas</option>
+          </select>
+          <button class="btn btn-primary" onclick="abrirForm('premios')">+ Nuevo Premio</button>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Premio</th><th>Ruleta</th><th>Total</th><th>Disponible</th><th>Entregado</th><th>Prob.%</th><th>Acciones</th></tr></thead>
+            <tbody id="tabla-premios"></tbody>
+          </table>
+          <div class="paginacion">
+            <span id="pag-info-premios">—</span>
+            <div class="pag-btns">
+              <button class="pag-btn" onclick="cambiarPag('premios',-1)">‹</button>
+              <button class="pag-btn" onclick="cambiarPag('premios',1)">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ CLIENTES ══ -->
+      <div class="modulo" id="mod-clientes">
+        <div class="toolbar">
+          <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="q-clientes" placeholder="Buscar por nombre o email..." oninput="buscarClientes(this.value)"></div>
+          <select id="fil-clientes-estatus" onchange="cargarClientes(1)" style="background:var(--card);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;cursor:pointer">
+            <option value="">Todos los estatus</option>
+            <option value="anadido">Añadido</option>
+            <option value="registrado">Registrado</option>
+            <option value="participo">Participó</option>
+            <option value="referido">Referido</option>
+          </select>
+          <button class="btn btn-secondary" onclick="abrirImport()">📂 Importar XLSX</button>
+          <button class="btn btn-primary" onclick="abrirForm('clientes')">+ Nuevo Cliente</button>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Email</th><th>Nombre</th><th>Agencia</th><th>Estatus</th><th>Token</th><th>Acciones</th></tr></thead>
+            <tbody id="tabla-clientes"></tbody>
+          </table>
+          <div class="paginacion">
+            <span id="pag-info-clientes">—</span>
+            <div class="pag-btns">
+              <button class="pag-btn" onclick="cambiarPag('clientes',-1)">‹</button>
+              <button class="pag-btn" onclick="cambiarPag('clientes',1)">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ AGENCIAS ══ -->
+      <div class="modulo" id="mod-agencias">
+        <div class="toolbar">
+          <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="q-agencias" placeholder="Buscar agencia..."></div>
+          <button class="btn btn-primary" onclick="abrirForm('agencias')">+ Nueva Agencia</button>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Nombre</th><th>Ciudad</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tabla-agencias"></tbody>
+          </table>
+          <div class="paginacion">
+            <span id="pag-info-agencias">—</span>
+            <div class="pag-btns">
+              <button class="pag-btn" onclick="cambiarPag('agencias',-1)">‹</button>
+              <button class="pag-btn" onclick="cambiarPag('agencias',1)">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PREGUNTAS ══ -->
+      <div class="modulo" id="mod-preguntas">
+        <div class="toolbar">
+          <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="q-preguntas" placeholder="Buscar pregunta..."></div>
+          <button class="btn btn-primary" onclick="abrirForm('preguntas')">+ Nueva Pregunta</button>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Pregunta</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tabla-preguntas"></tbody>
+          </table>
+          <div class="paginacion">
+            <span id="pag-info-preguntas">—</span>
+            <div class="pag-btns">
+              <button class="pag-btn" onclick="cambiarPag('preguntas',-1)">‹</button>
+              <button class="pag-btn" onclick="cambiarPag('preguntas',1)">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ REFERIDOS ══ -->
+      <div class="modulo" id="mod-referidos">
+        <div class="toolbar">
+          <select id="fil-ref-estatus" onchange="cargarReferidos(1)" style="background:var(--card);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;cursor:pointer">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">⏳ Pendientes</option>
+            <option value="aprobado">✅ Aprobados</option>
+            <option value="rechazado">❌ Rechazados</option>
+          </select>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Referidor</th><th>Email referido</th><th>Ruleta</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+            <tbody id="tabla-referidos"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--txt-dd)">Cargando...</td></tr></tbody>
+          </table>
+          <div class="paginacion">
+            <span id="pag-info-referidos">—</span>
+            <div class="pag-btns">
+              <button class="pag-btn" onclick="cambiarPagRef(-1)">‹</button>
+              <button class="pag-btn" onclick="cambiarPagRef(1)">›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ GANADORES ══ -->
+      <div class="modulo" id="mod-ganadores">
+        <div class="toolbar">
+          <select id="sel-ruleta-reporte" onchange="cargarGanadores()" style="background:var(--card);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:9px 16px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;cursor:pointer;min-width:220px">
+            <option value="">Selecciona una ruleta</option>
+          </select>
+        </div>
+        <div class="stats-row" id="stats-reporte" style="display:none">
+          <div class="stat-card" style="--accent:var(--azul)"><div class="stat-num" id="rep-participaciones">0</div><div class="stat-label">Participaciones</div></div>
+          <div class="stat-card" style="--accent:var(--verde)"><div class="stat-num" id="rep-porc">0%</div><div class="stat-label">% Participación</div></div>
+          <div class="stat-card" style="--accent:var(--oro)"><div class="stat-num" id="rep-ganadores">0</div><div class="stat-label">Ganadores</div></div>
+        </div>
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>Cliente</th><th>Premio</th><th>Tipo</th><th>Fecha</th><th>Entrega</th><th>Acción</th></tr></thead>
+            <tbody id="tabla-ganadores"><tr><td colspan="4" style="text-align:center;padding:32px;color:var(--txt-dd)">Selecciona una ruleta</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ CORREOS ══ -->
+      <div class="modulo" id="mod-correos">
+        <div class="stats-row">
+          <div class="stat-card" style="--accent:var(--verde)">
+            <div class="stat-num" id="st-inv">—</div>
+            <div class="stat-label">Pendientes de invitar</div>
+          </div>
+          <div class="stat-card" style="--accent:var(--oro)">
+            <div class="stat-num" id="st-part">—</div>
+            <div class="stat-label">Participaron</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          <div class="tabla-wrap" style="flex:1;min-width:280px">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+              <div style="font-weight:700;margin-bottom:4px">Envío masivo de invitaciones</div>
+              <div style="font-size:.82rem;color:var(--txt-dd)">Envía a todos los clientes con estatus "añadido" en lotes de 500</div>
+            </div>
+            <div style="padding:16px 20px">
+              <button class="btn btn-primary" style="width:100%" onclick="enviarMasivo()">📧 Enviar invitaciones masivas</button>
+            </div>
+          </div>
+          <div class="tabla-wrap" style="flex:1;min-width:280px">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+              <div style="font-weight:700;margin-bottom:4px">Reenvío individual</div>
+              <div style="font-size:.82rem;color:var(--txt-dd)">Reenviar correo a un cliente específico por ID</div>
+            </div>
+            <div style="padding:16px 20px;display:flex;gap:10px">
+              <input id="inp-reenvio-id" type="number" placeholder="ID del cliente" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:9px 13px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none">
+              <button class="btn btn-secondary" onclick="reenviarCorreo()">Reenviar</button>
+            </div>
+          </div>
+        </div>
+        <div id="resultado-correo" style="margin-top:14px"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIGURACIÓN
+// ═══════════════════════════════════════════════════
+const API = window.location.origin;
+
+// Estado de paginación por módulo
+const PAGS = { ruletas:1, premios:1, clientes:1, agencias:1, preguntas:1 };
+const TOTS = { ruletas:0, premios:0, clientes:0, agencias:0, preguntas:0 };
+let moduloActual = 'dashboard';
+let busqTimer = null;
+
+// Cachés
+const ruletasCache = [];
+const agenciasCache = [];
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// AUTENTICACIÓN JWT
+// ═══════════════════════════════════════════════════
+const TOKEN_KEY    = 'admin_token';
+const ADMIN_KEY    = 'admin_data';
+
+function getToken()     { return localStorage.getItem(TOKEN_KEY); }
+function getAdminData() {
+  try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function cerrarSesion() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(ADMIN_KEY);
+  window.location.href = '/login';
+}
+
+// Inyectar token en la función api()
+// (se redefine más abajo, aquí solo se prepara)
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Verificar autenticación
+  const token = getToken();
+  if (!token) { window.location.href = '/login'; return; }
+
+  try {
+    const r = await fetch(`${API}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!r.ok) { cerrarSesion(); return; }
+    const adminData = await r.json();
+    localStorage.setItem(ADMIN_KEY, JSON.stringify(adminData));
+    mostrarInfoAdmin(adminData);
+  } catch {
+    cerrarSesion(); return;
+  }
+  await cargarDashboard();
+  await Promise.all([
+    cargarRuletas(1), cargarClientes(1),
+    cargarAgencias(1), cargarPreguntas(1),
+    cargarReferidos(1),
+  ]);
+  llenarSelectores();
+});
+
+// ═══════════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════════
+function ir(mod) {
+  document.querySelectorAll('.modulo').forEach(m => m.classList.remove('activo'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('activo'));
+  document.getElementById(`mod-${mod}`).classList.add('activo');
+  document.getElementById(`nav-${mod}`)?.classList.add('activo');
+  document.getElementById('topbar-title').textContent = {
+    dashboard:'Dashboard', ruletas:'Ruletas', premios:'Premios',
+    clientes:'Clientes', agencias:'Agencias', preguntas:'Preguntas de Seguridad',
+    ganadores:'Ganadores & Reportes', correos:'Gestión de Correos',
+  }[mod] || mod;
+  moduloActual = mod;
+  if (mod === 'premios') cargarPremios(1);
+  if (mod === 'correos') cargarEstadoCorreos();
+  if (mod === 'referidos') cargarReferidos(1);
+  if (mod === 'ganadores') llenarSelectReporte();
+}
+
+function recargarActual() {
+  const acciones = {
+    ruletas: () => cargarRuletas(PAGS.ruletas),
+    premios: () => cargarPremios(PAGS.premios),
+    clientes: () => cargarClientes(PAGS.clientes),
+    agencias: () => cargarAgencias(PAGS.agencias),
+    preguntas: () => cargarPreguntas(PAGS.preguntas),
+    dashboard: () => cargarDashboard(),
+    ganadores: () => cargarGanadores(),
+    correos: () => cargarEstadoCorreos(),
+  };
+  acciones[moduloActual]?.();
+  toast('Datos actualizados', 'info');
+}
+
+// ═══════════════════════════════════════════════════
+// API HELPER
+// ═══════════════════════════════════════════════════
+function mostrarInfoAdmin(admin) {
+  // Mostrar nombre del admin en el sidebar
+  const logoSub = document.querySelector('.sidebar-logo .logo-sub');
+  if (logoSub) logoSub.textContent = admin.nombre || admin.username;
+
+  // Agregar botón de cerrar sesión si no existe
+  if (!document.getElementById('btn-logout')) {
+    const footer = document.querySelector('.sidebar-footer');
+    if (footer) {
+      const btnLogout = document.createElement('div');
+      btnLogout.style.cssText = 'padding:8px 16px;margin:4px 8px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.82rem;color:#FF8A80;transition:all .2s;border:1px solid rgba(231,76,60,.2)';
+      btnLogout.id = 'btn-logout';
+      btnLogout.innerHTML = '<span>🚪</span><span>Cerrar sesión</span>';
+      btnLogout.onmouseover = () => btnLogout.style.background = 'rgba(231,76,60,.1)';
+      btnLogout.onmouseout  = () => btnLogout.style.background = 'transparent';
+      btnLogout.onclick = () => {
+        if (confirm('¿Cerrar sesión?')) cerrarSesion();
+      };
+      footer.appendChild(btnLogout);
+
+      // Mostrar opción de cambiar contraseña si es superadmin
+      if (admin.superadmin) {
+        const btnPass = document.createElement('div');
+        btnPass.style.cssText = 'padding:8px 16px;margin:2px 8px 8px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--txt-dd);transition:all .2s';
+        btnPass.innerHTML = '<span>🔑</span><span>Cambiar contraseña</span>';
+        btnPass.onmouseover = () => btnPass.style.color = 'var(--oro)';
+        btnPass.onmouseout  = () => btnPass.style.color = 'var(--txt-dd)';
+        btnPass.onclick = () => abrirCambioPassword();
+        footer.insertBefore(btnPass, btnLogout);
+      }
+    }
+  }
+}
+
+function abrirCambioPassword() {
+  document.getElementById('modal-titulo').textContent = 'Cambiar contraseña';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-row"><label>Contraseña actual</label>
+      <input type="password" id="f-pass-actual" placeholder="••••••••">
+    </div>
+    <div class="form-row"><label>Nueva contraseña</label>
+      <input type="password" id="f-pass-nueva" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-row"><label>Confirmar nueva contraseña</label>
+      <input type="password" id="f-pass-confirm" placeholder="Repite la nueva contraseña">
+    </div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarPassword()">Cambiar contraseña</button>`;
+  abrirModal();
+}
+
+async function guardarPassword() {
+  try {
+    await api('/auth/cambiar-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        password_actual: document.getElementById('f-pass-actual').value,
+        password_nueva:  document.getElementById('f-pass-nueva').value,
+        confirmar:       document.getElementById('f-pass-confirm').value,
+      }),
+    });
+    toast('✅ Contraseña actualizada correctamente', 'ok');
+    cerrarModal();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function api(path, opts = {}) {
+  const token = getToken();
+  const r = await fetch(`${API}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
+    ...opts,
+  });
+
+  // Leer el cuerpo como texto primero para evitar error si no es JSON
+  const txt = await r.text();
+  let d;
+  try {
+    d = JSON.parse(txt);
+  } catch {
+    // La respuesta no es JSON (ej: error 500 de FastAPI en HTML)
+    throw new Error(
+      r.status === 500 ? 'Error interno del servidor. Puede que el registro tenga datos relacionados.' :
+      r.status === 404 ? 'Registro no encontrado.' :
+      r.status === 409 ? 'Conflicto: el registro ya existe o tiene dependencias.' :
+      `Error ${r.status}: ${txt.slice(0, 120)}`
+    );
+  }
+  if (!r.ok) throw new Error(d.detail || `Error ${r.status}`);
+  return d;
+}
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+function toast(msg, tipo = 'ok') {
+  const el = document.createElement('div');
+  el.className = `toast ${tipo}`;
+  const ico = { ok:'✅', err:'❌', info:'ℹ️' }[tipo] || 'ℹ️';
+  el.innerHTML = `<span>${ico}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.style.opacity = '0', 2500);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════
+async function cargarDashboard() {
+  try {
+    const [r, c, p, a, pr] = await Promise.all([
+      api('/ruletas/?pagina=1&solo_activas=true'),
+      api('/clientes/?pagina=1'),
+      api('/premios/?pagina=1'),
+      api('/agencias/?pagina=1'),
+      api('/preguntas/?pagina=1'),
+    ]);
+    document.getElementById('st-ruletas').textContent  = r.total;
+    document.getElementById('st-clientes').textContent = c.total;
+    document.getElementById('st-premios').textContent  = p.total;
+    document.getElementById('st-agencias').textContent = a.total;
+
+    // Actualizar badges
+    ['ruletas','premios','clientes','agencias','preguntas'].forEach((k,i) => {
+      const t = [r,p,c,a,pr][i].total;
+      TOTS[k] = t;
+      const b = document.getElementById(`badge-${k}`);
+      if (b) b.textContent = t;
+    });
+
+    document.getElementById('dash-tabla').innerHTML = [
+      { icon:'🎡', mod:'ruletas',  tot:r.total, color:'var(--oro)'    },
+      { icon:'🏆', mod:'premios',  tot:p.total, color:'var(--verde)'  },
+      { icon:'👥', mod:'clientes', tot:c.total, color:'var(--azul)'   },
+      { icon:'🏢', mod:'agencias', tot:a.total, color:'var(--naranja)'},
+      { icon:'🔐', mod:'preguntas',tot:pr.total,color:'var(--morado)' },
+    ].map(x => `<tr>
+      <td><span style="font-size:1.1rem">${x.icon}</span> ${x.mod.charAt(0).toUpperCase()+x.mod.slice(1)}</td>
+      <td><span style="font-weight:700;color:${x.color}">${x.tot}</span></td>
+      <td><span class="badge badge-verde">Activo</span></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="ir('${x.mod}')">Ver →</button></td>
+    </tr>`).join('');
+  } catch (e) { toast('Error cargando dashboard', 'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// RULETAS
+// ═══════════════════════════════════════════════════
+async function cargarRuletas(pag = 1) {
+  PAGS.ruletas = pag;
+  try {
+    const d = await api(`/ruletas/?pagina=${pag}`);
+    TOTS.ruletas = d.total;
+    document.getElementById('badge-ruletas').textContent = d.total;
+    document.getElementById('pag-info-ruletas').textContent =
+      `${d.total} ruletas — página ${pag} de ${d.paginas_totales}`;
+
+    ruletasCache.length = 0;
+    d.datos.forEach(r => ruletasCache.push(r));
+
+    document.getElementById('tabla-ruletas').innerHTML = d.datos.length
+      ? d.datos.map(r => `<tr>
+          <td style="color:var(--txt-dd)">#${r.id}</td>
+          <td><strong>${r.nombre}</strong></td>
+          <td style="font-size:.8rem;color:var(--txt-dd)">${fmtFecha(r.fecha_inicio)}</td>
+          <td style="font-size:.8rem;color:var(--txt-dd)">${r.fecha_cierre ? fmtFecha(r.fecha_cierre) : '—'}</td>
+          <td>${r.activa ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td>
+          <td><div class="acciones">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarItem('ruletas',${r.id})" title="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="eliminar('ruletas',${r.id},'${r.nombre}')" title="Eliminar">🗑️</button>
+          </div></td>
+        </tr>`).join('')
+      : vacioHTML(6);
+  } catch (e) { toast('Error cargando ruletas', 'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// PREMIOS
+// ═══════════════════════════════════════════════════
+async function cargarPremios(pag = 1) {
+  PAGS.premios = pag;
+  const rul = document.getElementById('fil-premios-ruleta')?.value || '';
+  try {
+    const d = await api(`/premios/?pagina=${pag}${rul ? `&ruleta_id=${rul}` : ''}`);
+    TOTS.premios = d.total;
+    document.getElementById('badge-premios').textContent = d.total;
+    document.getElementById('pag-info-premios').textContent =
+      `${d.total} premios — página ${pag} de ${d.paginas_totales}`;
+
+    document.getElementById('tabla-premios').innerHTML = d.datos.length
+      ? d.datos.map(p => {
+          const rulNom = ruletasCache.find(r => r.id === p.ruleta_id)?.nombre || `#${p.ruleta_id}`;
+          const porcColor = p.porcentaje_prob > 30 ? 'badge-verde' : p.porcentaje_prob > 0 ? 'badge-naranja' : 'badge-rojo';
+          return `<tr>
+            <td style="color:var(--txt-dd)">#${p.id}</td>
+            <td><strong>${p.nombre}</strong>${p.es_condicionado ? ' <span class="badge badge-morado" style="font-size:.65rem">cond.</span>' : ''}</td>
+            <td style="font-size:.82rem;color:var(--txt-dd)">${rulNom}</td>
+            <td style="text-align:center">${p.cantidad_total}</td>
+            <td style="text-align:center"><span style="font-weight:700;color:${p.cantidad_disponible>0?'var(--verde)':'var(--rojo)'}">${p.cantidad_disponible}</span></td>
+            <td style="text-align:center;color:var(--txt-dd)">${p.cantidad_entregada}</td>
+            <td style="text-align:center"><span class="badge ${porcColor}">${p.porcentaje_prob}%</span></td>
+            <td><div class="acciones">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editarItem('premios',${p.id})" title="Editar">✏️</button>
+              <button class="btn btn-primary btn-sm" onclick="entregarPremio(${p.id})" title="Registrar entrega" style="padding:5px 9px;font-size:.75rem">📦</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="eliminar('premios',${p.id},'${p.nombre}')" title="Eliminar">🗑️</button>
+            </div></td>
+          </tr>`;
+        }).join('')
+      : vacioHTML(8);
+  } catch (e) { toast('Error cargando premios', 'err'); }
+}
+
+async function entregarPremio(id) {
+  try {
+    await api(`/premios/${id}/entregar`, { method:'PATCH' });
+    toast('Entrega registrada — inventario actualizado', 'ok');
+    cargarPremios(PAGS.premios);
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// CLIENTES
+// ═══════════════════════════════════════════════════
+async function cargarClientes(pag = 1) {
+  PAGS.clientes = pag;
+  const q  = document.getElementById('q-clientes')?.value || '';
+  const est = document.getElementById('fil-clientes-estatus')?.value || '';
+  try {
+    let url = `/clientes/?pagina=${pag}`;
+    if (q)   url += `&buscar=${encodeURIComponent(q)}`;
+    if (est) url += `&estatus=${est}`;
+    const d = await api(url);
+    TOTS.clientes = d.total;
+    document.getElementById('badge-clientes').textContent = d.total;
+    document.getElementById('pag-info-clientes').textContent =
+      `${d.total} clientes — página ${pag} de ${d.paginas_totales}`;
+
+    const colEst = { anadido:'badge-azul', registrado:'badge-naranja', participo:'badge-verde', referido:'badge-morado', referido_aprobado:'badge-verde', referido_rechazado:'badge-rojo' };
+    document.getElementById('tabla-clientes').innerHTML = d.datos.length
+      ? d.datos.map(c => `<tr>
+          <td style="color:var(--txt-dd)">#${c.id}</td>
+          <td style="font-size:.85rem">${c.email}</td>
+          <td>${[c.nombres,c.apellidos].filter(Boolean).join(' ') || '<span style="color:var(--txt-dd)">—</span>'}</td>
+          <td style="font-size:.82rem;color:var(--txt-dd)">${c.agencia_id ? `#${c.agencia_id}` : '—'}</td>
+          <td><span class="badge ${colEst[c.estatus]||'badge-azul'}">${c.estatus}</span></td>
+          <td><code style="font-size:.72rem;background:var(--card2);padding:2px 7px;border-radius:5px;color:var(--oro)">${c.token?.slice(0,12) || '—'}…</code></td>
+          <td><div class="acciones">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarItem('clientes',${c.id})" title="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="eliminar('clientes',${c.id},'${c.email}')" title="Eliminar">🗑️</button>
+          </div></td>
+        </tr>`).join('')
+      : vacioHTML(7);
+  } catch (e) { toast('Error cargando clientes', 'err'); }
+}
+
+function buscarClientes(q) {
+  clearTimeout(busqTimer);
+  busqTimer = setTimeout(() => cargarClientes(1), 400);
+}
+
+// ═══════════════════════════════════════════════════
+// AGENCIAS
+// ═══════════════════════════════════════════════════
+async function cargarAgencias(pag = 1) {
+  PAGS.agencias = pag;
+  try {
+    const d = await api(`/agencias/?pagina=${pag}`);
+    TOTS.agencias = d.total;
+    document.getElementById('badge-agencias').textContent = d.total;
+    document.getElementById('pag-info-agencias').textContent =
+      `${d.total} agencias — página ${pag} de ${d.paginas_totales}`;
+
+    agenciasCache.length = 0;
+    d.datos.forEach(a => agenciasCache.push(a));
+
+    document.getElementById('tabla-agencias').innerHTML = d.datos.length
+      ? d.datos.map(a => `<tr>
+          <td style="color:var(--txt-dd)">#${a.id}</td>
+          <td><strong>${a.nombre}</strong></td>
+          <td style="color:var(--txt-dd)">${a.ciudad || '—'}</td>
+          <td style="font-size:.82rem;color:var(--txt-dd)">${a.direccion || '—'}</td>
+          <td>${a.activa ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td>
+          <td><div class="acciones">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarItem('agencias',${a.id})" title="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="eliminar('agencias',${a.id},'${a.nombre}')" title="Eliminar">🗑️</button>
+          </div></td>
+        </tr>`).join('')
+      : vacioHTML(6);
+  } catch (e) { toast('Error cargando agencias', 'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// PREGUNTAS
+// ═══════════════════════════════════════════════════
+async function cargarPreguntas(pag = 1) {
+  PAGS.preguntas = pag;
+  try {
+    const d = await api(`/preguntas/?pagina=${pag}&solo_activas=false`);
+    TOTS.preguntas = d.total;
+    document.getElementById('badge-preguntas').textContent = d.total;
+    document.getElementById('pag-info-preguntas').textContent =
+      `${d.total} preguntas — página ${pag} de ${d.paginas_totales}`;
+
+    document.getElementById('tabla-preguntas').innerHTML = d.datos.length
+      ? d.datos.map(p => `<tr>
+          <td style="color:var(--txt-dd)">#${p.id}</td>
+          <td style="font-size:.88rem">${p.pregunta}</td>
+          <td>${p.activa ? '<span class="badge badge-verde">Activa</span>' : '<span class="badge badge-rojo">Inactiva</span>'}</td>
+          <td><div class="acciones">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarItem('preguntas',${p.id})" title="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="eliminar('preguntas',${p.id},'pregunta #${p.id}')" title="Eliminar">🗑️</button>
+          </div></td>
+        </tr>`).join('')
+      : vacioHTML(4);
+  } catch (e) { toast('Error cargando preguntas', 'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// GANADORES / REPORTES
+// ═══════════════════════════════════════════════════
+function llenarSelectReporte() {
+  const sel = document.getElementById('sel-ruleta-reporte');
+  sel.innerHTML = '<option value="">Selecciona una ruleta</option>';
+  ruletasCache.forEach(r => {
+    const o = document.createElement('option');
+    o.value = r.id; o.textContent = r.nombre;
+    sel.appendChild(o);
+  });
+}
+
+async function cargarGanadores() {
+  const id = document.getElementById('sel-ruleta-reporte').value;
+  if (!id) return;
+  try {
+    // Cargar reporte de estadísticas
+    const rep = await api(`/ruleta/reporte/${id}`).catch(() => null);
+    if (rep) {
+      document.getElementById('stats-reporte').style.display = 'grid';
+      document.getElementById('rep-participaciones').textContent = rep.ruleta?.total_participaciones ?? '—';
+      document.getElementById('rep-porc').textContent = (rep.ruleta?.porcentaje_participacion ?? '—') + '%';
+    }
+
+    // Cargar lista completa de ganadores (endpoint correcto)
+    const d = await api(`/ruleta/ganadores/${id}`);
+    const soloGanadores = d.ganadores.filter(g => g.gano);
+    document.getElementById('rep-ganadores').textContent = soloGanadores.length;
+
+    document.getElementById('tabla-ganadores').innerHTML = d.ganadores.length
+      ? d.ganadores.map(g => `<tr>
+          <td>
+            <div style="font-size:.85rem;font-weight:600">${g.cliente_nombre || '—'}</div>
+            <div style="font-size:.75rem;color:var(--txt-dd)">${g.cliente_email}</div>
+          </td>
+          <td>
+            ${g.gano
+              ? `<strong style="color:var(--oro)">${g.premio}</strong>`
+              : `<span style="color:var(--txt-dd);font-size:.82rem">Sin premio</span>`}
+          </td>
+          <td>
+            ${g.gano
+              ? `<span class="badge badge-oro">🏆 Ganador</span>`
+              : `<span class="badge" style="background:rgba(255,255,255,.05);color:var(--txt-dd)">Participó</span>`}
+          </td>
+          <td style="font-size:.78rem;color:var(--txt-dd)">${g.fecha?.slice(0,16).replace('T',' ') || '—'}</td>
+          <td>
+            ${g.gano
+              ? g.entregado
+                ? `<span class="badge badge-verde">✅ Entregado</span>`
+                : `<span class="badge badge-naranja">⏳ Pendiente</span>`
+              : '—'}
+          </td>
+          <td>
+            ${g.gano && !g.entregado
+              ? `<button class="btn btn-primary btn-sm" onclick="marcarEntrega(${g.participacion_id},'${g.cliente_email}','${g.cliente_nombre}','${g.premio}')" title="Marcar como entregado">📦 Entregar</button>`
+              : g.entregado
+                ? `<span style="font-size:.75rem;color:var(--verde)">✅</span>`
+                : '—'}
+          </td>
+        </tr>`).join('')
+      : vacioHTML(6, 'Sin participaciones aún');
+  } catch (e) { toast('Error cargando ganadores: ' + e.message, 'err'); }
+}
+
+function marcarEntrega(participacionId, clienteEmail, clienteNombre, premio) {
+  document.getElementById('modal-titulo').textContent = 'Registrar entrega de premio';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);border-radius:12px;padding:14px 16px;margin-bottom:18px">
+      <div style="font-size:.72rem;letter-spacing:1px;text-transform:uppercase;color:var(--oro);margin-bottom:6px">Ganador</div>
+      <div style="font-weight:700;color:var(--txt)">${clienteNombre || clienteEmail}</div>
+      <div style="font-size:.8rem;color:var(--txt-dd)">${clienteEmail}</div>
+      <div style="margin-top:6px"><span class="badge badge-oro">🏆 ${premio}</span></div>
+    </div>
+
+    <div class="form-row">
+      <label>📅 Fecha de entrega</label>
+      <input id="f-fecha-ent" placeholder="Ej: Lunes 25 de marzo de 2026" type="text">
+    </div>
+    <div class="form-2col">
+      <div class="form-row">
+        <label>🕐 Hora</label>
+        <input id="f-hora-ent" placeholder="Ej: 10:00 AM - 12:00 PM" type="text">
+      </div>
+      <div class="form-row">
+        <label>📍 Lugar / Dirección</label>
+        <input id="f-lugar-ent" placeholder="Ej: Oficina Central, Av. España 1234">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>📝 Indicaciones adicionales</label>
+      <textarea id="f-notas-ent" placeholder="Ej: Presentar cédula de identidad. Preguntar por el área de RRHH."></textarea>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">📧 Enviar correo de notificación al ganador</span>
+      <label class="toggle">
+        <input type="checkbox" id="f-enviar-correo" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div style="font-size:.75rem;color:var(--txt-dd);margin-top:6px;line-height:1.5">
+      El ganador recibirá un correo con los detalles del premio y la información de entrega.
+    </div>`;
+
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" id="btn-confirmar-entrega" onclick="confirmarEntrega(${participacionId})">
+      📦 Confirmar entrega
+    </button>`;
+  abrirModal();
+}
+
+async function confirmarEntrega(participacionId) {
+  const btn = document.getElementById('btn-confirmar-entrega');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Procesando...';
+
+  const payload = {
+    fecha_entrega: document.getElementById('f-fecha-ent')?.value?.trim() || null,
+    hora_entrega:  document.getElementById('f-hora-ent')?.value?.trim()  || null,
+    lugar_entrega: document.getElementById('f-lugar-ent')?.value?.trim() || null,
+    notas_entrega: document.getElementById('f-notas-ent')?.value?.trim() || null,
+    enviar_correo: document.getElementById('f-enviar-correo')?.checked ?? true,
+  };
+
+  try {
+    const d = await api(`/ruleta/ganadores/${participacionId}/entregar`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+
+    cerrarModal();
+    cargarGanadores();
+
+    if (d.correo_enviado) {
+      toast(`✅ Entrega registrada — Correo enviado a ${d.cliente_email} 📧`, 'ok');
+    } else if (payload.enviar_correo && d.correo_error) {
+      toast(`⚠️ Entrega registrada pero el correo falló: ${d.correo_error}`, 'info');
+    } else {
+      toast(`📦 Entrega registrada para ${d.cliente_email}`, 'ok');
+    }
+  } catch (e) {
+    toast(e.message, 'err');
+    btn.disabled = false; btn.innerHTML = '📦 Confirmar entrega';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// CORREOS
+// ═══════════════════════════════════════════════════
+async function cargarEstadoCorreos() {
+  try {
+    const c = await api('/clientes/?pagina=1&estatus=anadido');
+    const p = await api('/clientes/?pagina=1&estatus=participo');
+    document.getElementById('st-inv').textContent  = c.total;
+    document.getElementById('st-part').textContent = p.total;
+  } catch (e) {}
+}
+
+async function enviarMasivo() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Enviando...';
+  try {
+    const d = await api('/correos/masivo/', { method:'POST' });
+    document.getElementById('resultado-correo').innerHTML = `
+      <div class="tabla-wrap" style="padding:16px 20px">
+        <div style="font-weight:700;margin-bottom:8px;color:var(--verde)">✅ Envío completado</div>
+        <div style="font-size:.85rem;color:var(--txt-d)">Total: <b>${d.total}</b> | Enviados: <b style="color:var(--verde)">${d.enviados}</b> | Fallidos: <b style="color:var(--rojo)">${d.fallidos}</b> | Lotes: ${d.lotes_procesados}</div>
+      </div>`;
+    toast(`Enviados: ${d.enviados} | Fallidos: ${d.fallidos}`, 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = '📧 Enviar invitaciones masivas'; }
+}
+
+async function reenviarCorreo() {
+  const id = document.getElementById('inp-reenvio-id').value;
+  if (!id) { toast('Ingresa el ID del cliente', 'err'); return; }
+  try {
+    const d = await api(`/correos/reenviar/${id}`, { method:'POST' });
+    toast(`Correo reenviado a ${d.email || 'cliente #'+id}`, 'ok');
+    document.getElementById('inp-reenvio-id').value = '';
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════
+// PAGINACIÓN
+// ═══════════════════════════════════════════════════
+function cambiarPag(mod, dir) {
+  const nueva = PAGS[mod] + dir;
+  const maxPag = Math.ceil(TOTS[mod] / 20);
+  if (nueva < 1 || nueva > maxPag) return;
+  const fn = { ruletas:cargarRuletas, premios:cargarPremios, clientes:cargarClientes, agencias:cargarAgencias, preguntas:cargarPreguntas };
+  fn[mod]?.(nueva);
+}
+
+function filtrarTabla(mod, q) {
+  clearTimeout(busqTimer);
+  busqTimer = setTimeout(() => {
+    const fn = { clientes:cargarClientes };
+    fn[mod]?.(1);
+  }, 400);
+}
+
+// ═══════════════════════════════════════════════════
+// FORMULARIOS — CREAR / EDITAR
+// ═══════════════════════════════════════════════════
+const FORMS = {
+  ruletas: (data={}) => ({
+    titulo: data.id ? 'Editar Ruleta' : 'Nueva Ruleta',
+    body: `
+      <div class="form-row"><label>Nombre</label><input id="f-nombre" value="${data.nombre||''}" placeholder="Nombre del evento"></div>
+      <div class="form-row"><label>Descripción</label><textarea id="f-desc">${data.descripcion||''}</textarea></div>
+      <div class="form-2col">
+        <div class="form-row"><label>Fecha inicio</label><input id="f-inicio" type="datetime-local" value="${toDatetimeLocal(data.fecha_inicio)}"></div>
+        <div class="form-row"><label>Fecha cierre</label><input id="f-cierre" type="datetime-local" value="${toDatetimeLocal(data.fecha_cierre)}"></div>
+      </div>
+      <div class="form-2col">
+        <div class="form-row"><label>Máx. giros</label><input id="f-giros" type="number" value="${data.max_giros||1}" min="1"></div>
+        <div class="form-row" style="padding-top:24px"><div class="toggle-row"><span class="toggle-label">Activa</span><label class="toggle"><input type="checkbox" id="f-activa" ${data.activa!==false?'checked':''}><span class="toggle-slider"></span></label></div></div>
+      </div>`,
+    getData: () => ({
+      nombre: V('f-nombre'), descripcion: V('f-desc')||null,
+      fecha_inicio: document.getElementById('f-inicio').value,
+      fecha_cierre: document.getElementById('f-cierre').value||null,
+      max_giros: parseInt(V('f-giros')||1),
+      activa: document.getElementById('f-activa').checked,
+    })
+  }),
+
+  premios: (data={}) => ({
+    titulo: data.id ? 'Editar Premio' : 'Nuevo Premio',
+    body: `
+      <div class="form-row"><label>Ruleta</label>
+        <select id="f-ruleta">${ruletasCache.map(r=>`<option value="${r.id}" ${data.ruleta_id==r.id?'selected':''}>${r.nombre}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Nombre del premio</label><input id="f-nombre" value="${data.nombre||''}" placeholder="Ej: Smartphone Samsung"></div>
+      <div class="form-2col">
+        <div class="form-row"><label>Cantidad total</label><input id="f-total" type="number" value="${data.cantidad_total||0}" min="0"></div>
+        <div class="form-row"><label>Disponible</label><input id="f-disp" type="number" value="${data.cantidad_disponible||0}" min="0"></div>
+      </div>
+      <div class="form-2col">
+        <div class="form-row"><label>Probabilidad %</label><input id="f-prob" type="number" step="0.01" value="${data.porcentaje_prob||0}" min="0" max="100"></div>
+        <div class="form-row"><label>URL imagen</label><input id="f-img" value="${data.imagen_url||''}" placeholder="https://..."></div>
+      </div>
+      <div class="form-row">
+        <div class="toggle-row">
+          <span class="toggle-label">Premio condicionado</span>
+          <label class="toggle">
+            <input type="checkbox" id="f-cond" ${data.es_condicionado?'checked':''} onchange="toggleCondicionado()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="form-hint">Si está activo, se reserva para clientes específicos</div>
+      </div>
+      <!-- Sección de asignación condicionada - aparece solo si es_condicionado=true -->
+      <div id="sec-condicionado" style="display:${data.es_condicionado?'block':'none'}">
+        <div style="background:rgba(155,89,182,.08);border:1px solid rgba(155,89,182,.2);border-radius:12px;padding:16px 18px;margin-bottom:4px">
+          <div style="font-size:.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9B59B6;margin-bottom:12px">🎯 Asignar ganador específico</div>
+          <div class="form-row" style="margin-bottom:10px">
+            <label>Email del cliente ganador</label>
+            <input id="f-email-ganador" placeholder="correo@cliente.com" type="email" value="${data._email_ganador||''}">
+            <div class="form-hint">Este cliente recibirá este premio garantizado al girar la ruleta</div>
+          </div>
+          <div id="condicionados-existentes" style="margin-top:10px"></div>
+        </div>
+      </div>`,
+    getData: () => ({
+      ruleta_id: parseInt(V('f-ruleta')),
+      nombre: V('f-nombre'),
+      cantidad_total: parseInt(V('f-total')||0),
+      cantidad_disponible: parseInt(V('f-disp')||0),
+      cantidad_entregada: data.cantidad_entregada||0,
+      porcentaje_prob: parseFloat(V('f-prob')||0),
+      imagen_url: V('f-img')||null,
+      es_condicionado: document.getElementById('f-cond').checked,
+    })
+  }),
+
+  clientes: (data={}) => ({
+    titulo: data.id ? 'Editar Cliente' : 'Nuevo Cliente',
+    body: `
+      <div class="form-row"><label>Email</label><input id="f-email" type="email" value="${data.email||''}" placeholder="correo@ejemplo.com" ${data.id?'readonly style="opacity:.6"':''}></div>
+      <div class="form-2col">
+        <div class="form-row"><label>Nombres</label><input id="f-nombres" value="${data.nombres||''}" placeholder="Juan"></div>
+        <div class="form-row"><label>Apellidos</label><input id="f-apellidos" value="${data.apellidos||''}" placeholder="Pérez"></div>
+      </div>
+      <div class="form-2col">
+        <div class="form-row"><label>Celular</label><input id="f-celular" value="${data.celular||''}" placeholder="0981 000 000"></div>
+        <div class="form-row"><label>Agencia</label>
+          <select id="f-agencia"><option value="">Sin agencia</option>${agenciasCache.map(a=>`<option value="${a.id}" ${data.agencia_id==a.id?'selected':''}>${a.nombre}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="form-row"><label>Dirección</label><input id="f-dir" value="${data.direccion||''}" placeholder="Av. ..."></div>`,
+    getData: () => ({
+      email: V('f-email'),
+      nombres: V('f-nombres')||null,
+      apellidos: V('f-apellidos')||null,
+      celular: V('f-celular')||null,
+      agencia_id: parseInt(V('f-agencia'))||null,
+      direccion: V('f-dir')||null,
+    })
+  }),
+
+  agencias: (data={}) => ({
+    titulo: data.id ? 'Editar Agencia' : 'Nueva Agencia',
+    body: `
+      <div class="form-row"><label>Nombre</label><input id="f-nombre" value="${data.nombre||''}" placeholder="Agencia Central"></div>
+      <div class="form-2col">
+        <div class="form-row"><label>Ciudad</label><input id="f-ciudad" value="${data.ciudad||''}" placeholder="Asunción"></div>
+        <div class="form-row"><label>Dirección</label><input id="f-dir" value="${data.direccion||''}" placeholder="Av. España 1234"></div>
+      </div>
+      <div class="form-row"><label>Descripción</label><textarea id="f-desc">${data.descripcion||''}</textarea></div>
+      <div class="form-row"><div class="toggle-row"><span class="toggle-label">Activa</span><label class="toggle"><input type="checkbox" id="f-activa" ${data.activa!==false?'checked':''}><span class="toggle-slider"></span></label></div></div>`,
+    getData: () => ({
+      nombre: V('f-nombre'),
+      ciudad: V('f-ciudad')||null,
+      direccion: V('f-dir')||null,
+      descripcion: V('f-desc')||null,
+      activa: document.getElementById('f-activa').checked,
+    })
+  }),
+
+  preguntas: (data={}) => ({
+    titulo: data.id ? 'Editar Pregunta' : 'Nueva Pregunta',
+    body: `
+      <div class="form-row"><label>Pregunta de seguridad</label><textarea id="f-preg" placeholder="¿Cuál es el nombre de tu mascota?">${data.pregunta||''}</textarea></div>
+      <div class="form-row"><div class="toggle-row"><span class="toggle-label">Activa</span><label class="toggle"><input type="checkbox" id="f-activa" ${data.activa!==false?'checked':''}><span class="toggle-slider"></span></label></div></div>`,
+    getData: () => ({
+      pregunta: V('f-preg'),
+      activa: document.getElementById('f-activa').checked,
+    })
+  }),
+};
+
+// Endpoints de la API por módulo
+const ENDPOINTS = {
+  ruletas:   '/ruletas/',
+  premios:   '/premios/',
+  clientes:  '/clientes/',
+  agencias:  '/agencias/',
+  preguntas: '/preguntas/',
+};
+
+let formMod = '', formId = null;
+
+function abrirForm(mod, data = {}) {
+  formMod = mod; formId = data.id || null;
+  const f = FORMS[mod](data);
+  document.getElementById('modal-titulo').textContent = f.titulo;
+  document.getElementById('modal-body').innerHTML = f.body;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-primary" id="btn-guardar" onclick="guardar()">
+      ${data.id ? 'Guardar cambios' : 'Crear'}
+    </button>`;
+  abrirModal();
+}
+
+async function editarItem(mod, id) {
+  try {
+    const d = await api(`${ENDPOINTS[mod]}${id}`);
+    abrirForm(mod, d);
+    // Si es un premio condicionado, cargar los ganadores ya asignados
+    if (mod === 'premios' && d.es_condicionado) {
+      setTimeout(() => cargarCondicionadosExistentes(id), 200);
+    }
+  } catch (e) { toast('Error cargando datos', 'err'); }
+}
+
+async function guardar() {
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const data = FORMS[formMod]({}).getData();
+    const url  = formId ? `${ENDPOINTS[formMod]}${formId}` : ENDPOINTS[formMod];
+    const meth = formId ? 'PATCH' : 'POST';
+    const resp = await api(url, { method: meth, body: JSON.stringify(data) });
+
+    // Si es un premio condicionado y hay email de ganador → crear condicionado
+    if (formMod === 'premios' && data.es_condicionado) {
+      const emailGanador = document.getElementById('f-email-ganador')?.value?.trim();
+      if (emailGanador) {
+        const premioId = resp.id || formId;
+        try {
+          await api('/premios/condicionados/', {
+            method: 'POST',
+            body: JSON.stringify({ premio_id: premioId, email_cliente: emailGanador }),
+          });
+          toast(`✅ Premio asignado a ${emailGanador}`, 'ok');
+        } catch (ec) {
+          toast(`Premio guardado pero error al asignar: ${ec.message}`, 'info');
+        }
+      }
+    }
+
+    toast(formId ? 'Actualizado correctamente' : 'Creado correctamente', 'ok');
+    cerrarModal();
+    recargarMod(formMod);
+  } catch (e) {
+    toast(e.message, 'err');
+    btn.disabled = false; btn.textContent = formId ? 'Guardar cambios' : 'Crear';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ELIMINAR
+// ═══════════════════════════════════════════════════
+function eliminar(mod, id, nombre) {
+  const esCliente = mod === 'clientes';
+  document.getElementById('modal-titulo').textContent = 'Confirmar eliminación';
+  document.getElementById('modal-body').innerHTML = `
+    <p style="color:var(--txt-d);line-height:1.6;margin-bottom:10px">
+      ¿Estás seguro de que deseas eliminar <strong style="color:var(--txt)">"${nombre}"</strong>?
+    </p>
+    ${esCliente ? `
+    <div style="background:rgba(230,126,34,.08);border:1px solid rgba(230,126,34,.2);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:.83rem;color:#E67E22;line-height:1.6">
+      ⚠️ Si el cliente tiene participaciones o correos registrados no se podrá eliminar.<br>
+      En ese caso te recomendamos solo cambiar su estatus en lugar de eliminar.
+    </div>` : ''}
+    <p style="font-size:.82rem;color:var(--rojo)">⚠️ Esta acción es irreversible.</p>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-danger" onclick="confirmarEliminar('${mod}',${id})">Sí, eliminar</button>`;
+  abrirModal();
+}
+
+async function confirmarEliminar(mod, id) {
+  try {
+    await api(`${ENDPOINTS[mod]}${id}`, { method:'DELETE' });
+    toast('Eliminado correctamente', 'ok');
+    cerrarModal();
+    recargarMod(mod);
+  } catch (e) {
+    // Mostrar el error dentro del modal en lugar de solo un toast
+    const body = document.getElementById('modal-body');
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.83rem;color:#FF8A80;line-height:1.6';
+    errDiv.innerHTML = `❌ ${e.message}`;
+    // Quitar error previo si hay
+    body.querySelector('.err-inline')?.remove();
+    errDiv.classList.add('err-inline');
+    body.appendChild(errDiv);
+    toast(e.message, 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// IMPORTACIÓN XLSX/CSV
+// ═══════════════════════════════════════════════════
+function abrirImport() {
+  document.getElementById('modal-titulo').textContent = 'Importar Clientes';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('inp-file-import').click()">
+      <div class="drop-zone-icon">📂</div>
+      <p>Haz clic para seleccionar archivo</p>
+      <small>Formatos aceptados: .xlsx, .csv</small>
+    </div>
+    <input type="file" id="inp-file-import" accept=".xlsx,.csv" onchange="importarArchivo(this.files[0])">
+    <div style="margin-top:14px;font-size:.8rem;color:var(--txt-dd);line-height:1.7">
+      <strong style="color:var(--txt-d)">Columnas requeridas:</strong><br>
+      <code style="color:var(--oro)">email</code> (obligatorio) &nbsp;·&nbsp;
+      <code>nombres</code> · <code>apellidos</code> · <code>celular</code> · <code>agencia_id</code>
+    </div>
+    <div id="resultado-import" style="margin-top:14px"></div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cerrar</button>`;
+  abrirModal();
+
+  // Drag & drop
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); importarArchivo(e.dataTransfer.files[0]); });
+}
+
+async function importarArchivo(file) {
+  if (!file) return;
+  const dz = document.getElementById('drop-zone');
+  dz.innerHTML = `<div class="drop-zone-icon">⏳</div><p>Procesando ${file.name}...</p>`;
+
+  const form = new FormData();
+  form.append('archivo', file);
+
+  try {
+    const r = await fetch(`${API}/clientes/importar/`, { method:'POST', body: form });
+    const d = await r.json();
+
+    document.getElementById('resultado-import').innerHTML = `
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--verde)">✅ Importación completada</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.85rem">
+          <div>Total filas: <strong>${d.total_filas}</strong></div>
+          <div style="color:var(--verde)">Importados: <strong>${d.importados}</strong></div>
+          <div style="color:var(--naranja)">Duplicados: <strong>${d.duplicados}</strong></div>
+          <div style="color:var(--rojo)">Errores: <strong>${d.errores}</strong></div>
+        </div>
+      </div>`;
+    toast(`Importados: ${d.importados} | Duplicados: ${d.duplicados}`, 'ok');
+    cargarClientes(1);
+    cargarDashboard();
+  } catch (e) {
+    document.getElementById('resultado-import').innerHTML =
+      `<div style="color:var(--rojo);font-size:.85rem">❌ ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function abrirModal() { document.getElementById('modal-overlay').classList.add('abierto'); }
+function cerrarModal() { document.getElementById('modal-overlay').classList.remove('abierto'); }
+
+function V(id) { return document.getElementById(id)?.value?.trim() || ''; }
+
+function fmtFecha(f) {
+  if (!f) return '—';
+  return new Date(f).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function toDatetimeLocal(f) {
+  if (!f) return '';
+  try { return new Date(f).toISOString().slice(0,16); } catch { return ''; }
+}
+
+function vacioHTML(cols, msg = 'Sin registros') {
+  return `<tr><td colspan="${cols}">
+    <div class="empty"><div class="empty-icon">🗃️</div><div class="empty-msg">${msg}</div></div>
+  </td></tr>`;
+}
+
+function recargarMod(mod) {
+  const fn = { ruletas:cargarRuletas, premios:cargarPremios, clientes:cargarClientes, agencias:cargarAgencias, preguntas:cargarPreguntas };
+  fn[mod]?.(PAGS[mod]);
+  if (mod === 'ruletas' || mod === 'agencias') llenarSelectores();
+  cargarDashboard();
+}
+
+function llenarSelectores() {
+  // Selector de ruleta en premios
+  const sel = document.getElementById('fil-premios-ruleta');
+  if (sel) {
+    sel.innerHTML = '<option value="">Todas las ruletas</option>';
+    ruletasCache.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.textContent = r.nombre;
+      sel.appendChild(o);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// REFERIDOS
+// ═══════════════════════════════════════════════════
+let pagRef = 1;
+let totRef = 0;
+
+async function cargarReferidos(pag = 1) {
+  pagRef = pag;
+  const estatus = document.getElementById('fil-ref-estatus')?.value || '';
+  try {
+    let url = `/referidos/?pagina=${pag}`;
+    if (estatus) url += `&estatus=${estatus}`;
+    const d = await api(url);
+    totRef = d.total;
+    document.getElementById('badge-referidos').textContent = d.total;
+    document.getElementById('pag-info-referidos').textContent =
+      `${d.total} solicitudes — página ${pag} de ${d.paginas_totales}`;
+
+    const colEst = { pendiente:'badge-naranja', aprobado:'badge-verde', rechazado:'badge-rojo' };
+    const icoEst = { pendiente:'⏳', aprobado:'✅', rechazado:'❌' };
+
+    document.getElementById('tabla-referidos').innerHTML = d.datos.length
+      ? d.datos.map((r, i) => `<tr>
+          <td style="color:var(--txt-dd)">#${r.id}</td>
+          <td style="font-size:.85rem">
+            <div style="font-weight:600">${r.referidor_nombre || '—'}</div>
+            <div style="font-size:.75rem;color:var(--txt-dd)">${r.referidor_email}</div>
+          </td>
+          <td style="font-size:.85rem">
+            <div>${r.email_referido}</div>
+            ${r.nombres_referido ? `<div style="font-size:.75rem;color:var(--txt-dd)">${r.nombres_referido}</div>` : ''}
+          </td>
+          <td style="font-size:.82rem;color:var(--txt-dd)">#${r.ruleta_id}</td>
+          <td><span class="badge ${colEst[r.estatus]}">${icoEst[r.estatus]} ${r.estatus}</span></td>
+          <td style="font-size:.78rem;color:var(--txt-dd)">${r.fecha_solicitud?.slice(0,10) || '—'}</td>
+          <td><div class="acciones">
+            ${r.estatus === 'pendiente' ? `
+              <button class="btn btn-primary btn-sm" onclick="aprobarRef(${r.id})" title="Aprobar">✅ Aprobar</button>
+              <button class="btn btn-danger btn-sm" onclick="rechazarRef(${r.id})" title="Rechazar">❌</button>
+            ` : `<span style="font-size:.78rem;color:var(--txt-dd)">${r.fecha_resolucion?.slice(0,10) || '—'}</span>`}
+          </div></td>
+        </tr>`).join('')
+      : `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🤝</div><div class="empty-msg">Sin solicitudes de referido</div></div></td></tr>`;
+  } catch (e) { toast('Error cargando referidos', 'err'); }
+}
+
+function cambiarPagRef(dir) {
+  const maxPag = Math.ceil(totRef / 20);
+  const nueva  = pagRef + dir;
+  if (nueva < 1 || nueva > maxPag) return;
+  cargarReferidos(nueva);
+}
+
+async function aprobarRef(id) {
+  try {
+    const d = await api(`/referidos/${id}/aprobar`, { method: 'PATCH' });
+    toast(`✅ Aprobado — Cliente creado: ${d.cliente_creado?.email || ''}`, 'ok');
+    cargarReferidos(pagRef);
+    cargarDashboard();
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function rechazarRef(id) {
+  document.getElementById('modal-titulo').textContent = 'Rechazar solicitud';
+  document.getElementById('modal-body').innerHTML = `
+    <p style="color:var(--txt-d);line-height:1.6;margin-bottom:16px">
+      ¿Confirmas el rechazo de la solicitud <strong>#${id}</strong>?
+    </p>
+    <div class="form-row">
+      <label>Motivo (opcional)</label>
+      <input id="f-motivo" placeholder="Ej: Email inválido, ya participa en otra ruleta...">
+    </div>`;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+    <button class="btn btn-danger" onclick="confirmarRechazo(${id})">Rechazar</button>`;
+  abrirModal();
+}
+
+async function confirmarRechazo(id) {
+  const motivo = document.getElementById('f-motivo')?.value || '';
+  try {
+    await api(`/referidos/${id}/rechazar${motivo ? `?motivo=${encodeURIComponent(motivo)}` : ''}`, { method: 'PATCH' });
+    toast('Solicitud rechazada', 'ok');
+    cerrarModal();
+    cargarReferidos(pagRef);
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ── Toggle condicionado ─────────────────────────
+function toggleCondicionado() {
+  const checked = document.getElementById('f-cond').checked;
+  const sec = document.getElementById('sec-condicionado');
+  if (sec) sec.style.display = checked ? 'block' : 'none';
+}
+
+// ── Cargar condicionados existentes de un premio ─
+async function cargarCondicionadosExistentes(premioId) {
+  const contenedor = document.getElementById('condicionados-existentes');
+  if (!contenedor || !premioId) return;
+  try {
+    const d = await api(`/premios/condicionados/?premio_id=${premioId}&entregado=false`);
+    if (!d.datos?.length) { contenedor.innerHTML = ''; return; }
+    contenedor.innerHTML = `
+      <div style="font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(155,89,182,.7);margin-bottom:8px">
+        Ganadores ya asignados (${d.datos.length})
+      </div>
+      ${d.datos.map(c => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid rgba(155,89,182,.15);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:.82rem">
+          <span style="color:var(--txt)">${c.email_cliente}</span>
+          <button onclick="eliminarCondicionado(${c.id})" style="background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.2);color:#FF8A80;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.75rem">✕</button>
+        </div>`).join('')}`;
+  } catch { contenedor.innerHTML = ''; }
+}
+
+async function eliminarCondicionado(id) {
+  try {
+    await api(`/premios/condicionados/${id}`, { method: 'DELETE' });
+    toast('Asignación eliminada', 'ok');
+    // Recargar la lista
+    if (formId) cargarCondicionadosExistentes(formId);
+  } catch (e) { toast(e.message, 'err'); }
+}
+</script>
+</body>
+</html>

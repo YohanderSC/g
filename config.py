@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # ── Base de datos ──────────────────────────────
     DATABASE_URL: str = "postgresql://postgres:Conejo.30@localhost:8080/ruleta_db"
-    #"postgresql://postgres:postgres@localhost:5432/ruleta_db"
+                        #"postgresql://postgres:postgres@localhost:5432/ruleta_db"
 
     # ── Servidor ───────────────────────────────────
     APP_HOST:   str  = "0.0.0.0"
@@ -42,17 +42,14 @@ class Settings(BaseSettings):
     MAIL_SERVER:    str  = "smtp.gmail.com"
     MAIL_TLS:       bool = True
     MAIL_SSL:       bool = False
-    MAIL_LOTE_SIZE: int  = 500   
-    # Tamaño del lote para envío masivo (req. #5)
+    MAIL_LOTE_SIZE: int  = 500   # Tamaño del lote para envío masivo (req. #5)
 
     # ── Seguridad ──────────────────────────────────
     SECRET_KEY:    str = "dev-secret-key-cambiar-en-produccion"
-    TOKEN_LENGTH:  int = 32   
-    # Longitud del token único de cliente (req. #4)
+    TOKEN_LENGTH:  int = 32   # Longitud del token único de cliente (req. #4)
 
     # ── Paginación ─────────────────────────────────
-    PAGE_SIZE: int = 20   
-    # Registros por página (requerimiento Semana 1)
+    PAGE_SIZE: int = 20   # Registros por página (requerimiento Semana 1)
 
     class Config:
         # Leer variables desde el archivo .env

@@ -44,3 +44,9 @@ fastapi-mail==1.4.1
 # ── Utilidades ────────────────────────────────────
 python-dotenv==1.0.1          # Carga de variables desde .env
 httpx==0.27.2                 # Cliente HTTP para testing
+
+# ── Autenticación ─────────────────────────────────
+# ⚠️ IMPORTANTE: bcrypt 3.x es compatible con passlib 1.7.4
+# bcrypt 4.x NO es compatible - causa error "password cannot be longer than 72 bytes"
+bcrypt==3.2.2                 # Versión compatible con passlib
+passlib[bcrypt]==1.7.4        # Hasheo de contraseñas

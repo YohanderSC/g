@@ -16,7 +16,7 @@ from app.models.models import GeneroCliente, EstatusCliente
 # SCHEMA BASE
 # ─────────────────────────────────────────────
 class ClienteBase(BaseModel):
-    email:      EmailStr        = Field(..., description="Email único del cliente")
+    email:      str        = Field(..., description="Email único del cliente")
     nombres:    Optional[str]  = Field(None, max_length=150)
     apellidos:  Optional[str]  = Field(None, max_length=150)
     celular:    Optional[str]  = Field(None, max_length=50)

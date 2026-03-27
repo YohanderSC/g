@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruleta de Premios</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --oro:#D4AF37;--oro-l:#F5D76E;--oro-d:#9A7B1A;
+  --negro:#0A0A0F;--negro-c:#12121A;--negro-ui:#1C1C28;
+  --blanco:#F8F4EE;--blanco-d:rgba(248,244,238,.55);
+  --verde:#2ECC71;--rojo:#E74C3C;--azul:#3498DB;--naranja:#E67E22;
+  --sombra-oro:0 0 40px rgba(212,175,55,.35);
+  --sombra-c:0 24px 64px rgba(0,0,0,.6);
+  --tr:.3s cubic-bezier(.4,0,.2,1)
+}
+html,body{height:100%;background:var(--negro);color:var(--blanco);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(212,175,55,.08) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 80% 90%,rgba(212,175,55,.05) 0%,transparent 60%),var(--negro)}
+.bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(212,175,55,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.03) 1px,transparent 1px);background-size:40px 40px}
+.app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px 48px}
+.header{text-align:center;margin-bottom:36px}
+.header-badge{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--oro);border:1px solid rgba(212,175,55,.3);padding:6px 16px;border-radius:999px;margin-bottom:14px;background:rgba(212,175,55,.06)}
+.header h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.8rem,7vw,4.5rem);letter-spacing:3px;line-height:.95;background:linear-gradient(135deg,var(--oro-l) 0%,var(--oro) 50%,var(--oro-d) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header p{color:var(--blanco-d);font-size:.9rem;margin-top:8px;letter-spacing:.5px}
+.card{background:var(--negro-c);border:1px solid rgba(212,175,55,.15);border-radius:24px;box-shadow:var(--sombra-c);padding:34px 30px;width:100%;max-width:480px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--oro),transparent)}
+.pantalla{display:none}
+.pantalla.activa{display:block;animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:2px;color:var(--blanco);margin-bottom:4px}
+.card-sub{font-size:.85rem;color:var(--blanco-d);margin-bottom:26px;line-height:1.5}
+.campo{margin-bottom:16px}
+.campo label{display:block;font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--oro);margin-bottom:7px}
+.campo input,.campo select{width:100%;background:var(--negro-ui);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:var(--blanco);font-family:'DM Sans',sans-serif;font-size:1rem;padding:13px 16px;outline:none;transition:border-color var(--tr),box-shadow var(--tr);-webkit-appearance:none}
+.campo select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23D4AF37' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-color:var(--negro-ui);padding-right:38px;cursor:pointer}
+.campo select option{background:var(--negro-ui);color:var(--blanco)}
+.campo input:focus,.campo select:focus{border-color:var(--oro);box-shadow:0 0 0 3px rgba(212,175,55,.15)}
+.campo input.error{border-color:var(--rojo);box-shadow:0 0 0 3px rgba(231,76,60,.15)}
+/* ── Estado del evento ─────────────────── */
+.evento-estado{display:none;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:.85rem;line-height:1.6;border-left:3px solid}
+.evento-estado.activo{display:block;background:rgba(46,204,113,.08);border-color:var(--verde);color:#69F0AE}
+.evento-estado.pronto{display:block;background:rgba(52,152,219,.08);border-color:var(--azul);color:#87CEEB}
+.evento-estado.cerrado{display:block;background:rgba(231,76,60,.08);border-color:var(--rojo);color:#FF8A80}
+.evento-estado-icon{font-size:1.1rem;margin-right:6px}
+/* Countdown */
+.countdown{display:none;background:var(--negro-ui);border:1px solid rgba(52,152,219,.25);border-radius:14px;padding:18px;margin-bottom:18px;text-align:center}
+.countdown.visible{display:block}
+.countdown-label{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:rgba(248,244,238,.4);margin-bottom:12px}
+.countdown-grid{display:flex;justify-content:center;gap:10px}
+.cd-box{background:var(--negro-c);border:1px solid rgba(52,152,219,.2);border-radius:10px;padding:10px 14px;min-width:54px;text-align:center}
+.cd-num{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--azul);letter-spacing:1px;line-height:1}
+.cd-lbl{font-size:.6rem;letter-spacing:1px;text-transform:uppercase;color:rgba(248,244,238,.35);margin-top:2px}
+/* ── Botones ─────────────────────────── */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px 22px;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all var(--tr);letter-spacing:.5px;position:relative;overflow:hidden}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-oro{background:linear-gradient(135deg,var(--oro-d) 0%,var(--oro) 50%,var(--oro-l) 100%);color:var(--negro);box-shadow:0 4px 20px rgba(212,175,55,.3)}
+.btn-oro:hover:not(:disabled){box-shadow:var(--sombra-oro);transform:translateY(-1px)}
+.btn-giro{background:linear-gradient(135deg,var(--oro-d),var(--oro));color:var(--negro);font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:3px;padding:19px;box-shadow:0 6px 30px rgba(212,175,55,.4)}
+.btn-giro:hover:not(:disabled){box-shadow:0 8px 40px rgba(212,175,55,.6);transform:translateY(-2px)}
+.alerta{display:none;padding:11px 15px;border-radius:10px;font-size:.86rem;line-height:1.5;margin-bottom:16px;border-left:3px solid}
+.alerta.error{display:block;background:rgba(231,76,60,.1);border-color:var(--rojo);color:#FF8A80}
+.alerta.exito{display:block;background:rgba(46,204,113,.1);border-color:var(--verde);color:#69F0AE}
+.alerta.info{display:block;background:rgba(212,175,55,.08);border-color:var(--oro);color:var(--oro-l)}
+/* ── Bienvenida ─────────────────────── */
+.bienvenida{background:var(--negro-ui);border:1px solid rgba(212,175,55,.15);border-radius:14px;padding:14px 18px;margin-bottom:22px;display:flex;align-items:center;gap:14px}
+.bv-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--oro-d),var(--oro));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--negro);flex-shrink:0}
+.bv-n{font-weight:700;font-size:1rem;color:var(--blanco);line-height:1.2}
+.bv-e{font-size:.77rem;color:var(--blanco-d);margin-top:2px}
+/* Chip de estado del evento en pantalla ruleta */
+.evento-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:600;margin-bottom:14px}
+.chip-activo{background:rgba(46,204,113,.12);color:var(--verde);border:1px solid rgba(46,204,113,.25)}
+.chip-pronto{background:rgba(52,152,219,.12);color:var(--azul);border:1px solid rgba(52,152,219,.25)}
+.chip-cerrado{background:rgba(231,76,60,.12);color:var(--rojo);border:1px solid rgba(231,76,60,.25)}
+/* Fechas del evento */
+.evento-fechas{background:var(--negro-ui);border:1px solid var(--border, rgba(255,255,255,.07));border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.8rem;color:var(--blanco-d);display:flex;justify-content:space-between;gap:10px}
+.fecha-item span{display:block;font-size:.65rem;letter-spacing:1px;text-transform:uppercase;color:rgba(248,244,238,.3);margin-bottom:2px}
+.fecha-item strong{color:var(--blanco)}
+/* ── Canvas ruleta ──────────────────── */
+.ruleta-wrap{position:relative;display:flex;flex-direction:column;align-items:center;margin:4px 0 22px}
+.puntero{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid var(--oro);filter:drop-shadow(0 3px 6px rgba(212,175,55,.6));margin-bottom:-3px;z-index:10;position:relative}
+.ruleta-marco{position:relative;border-radius:50%;padding:7px;background:conic-gradient(var(--oro-d) 0deg,var(--oro) 45deg,var(--oro-l) 90deg,var(--oro) 135deg,var(--oro-d) 180deg,var(--oro) 225deg,var(--oro-l) 270deg,var(--oro) 315deg,var(--oro-d) 360deg);box-shadow:0 0 0 4px var(--negro-c),var(--sombra-oro)}
+canvas#ruleta{display:block;border-radius:50%}
+.ruleta-centro{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:radial-gradient(circle,var(--oro-l) 20%,var(--oro) 60%,var(--oro-d) 100%);border:3px solid var(--negro-c);box-shadow:0 2px 12px rgba(0,0,0,.5),0 0 20px rgba(212,175,55,.4);z-index:5}
+/* ── Resultado ─────────────────────── */
+.resultado{text-align:center;padding:4px 0 12px}
+.res-icono{font-size:4rem;margin-bottom:14px;animation:bounceIn .7s cubic-bezier(.36,.07,.19,.97) both;display:block}
+.res-titulo{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;color:var(--blanco);margin-bottom:18px}
+.res-caja{background:linear-gradient(135deg,rgba(212,175,55,.1),rgba(212,175,55,.05));border:1px solid rgba(212,175,55,.3);border-radius:16px;padding:18px 22px;margin-bottom:16px;position:relative;overflow:hidden}
+.res-caja::before{content:'';position:absolute;top:0;left:-100%;right:-100%;height:2px;background:linear-gradient(90deg,transparent,var(--oro),transparent);animation:shimmer 2s ease infinite}
+@keyframes shimmer{0%{left:-100%;right:100%}100%{left:100%;right:-100%}}
+.res-label{font-size:.68rem;letter-spacing:3px;text-transform:uppercase;color:var(--oro);margin-bottom:7px;font-weight:600}
+.res-nombre{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:1px;color:var(--oro-l);line-height:1.1}
+.res-meta{font-size:.82rem;color:var(--blanco-d);line-height:1.6;margin-bottom:20px}
+.divider{height:1px;background:rgba(255,255,255,.07);margin:18px 0}
+.spinner{width:17px;height:17px;border:2px solid rgba(0,0,0,.2);border-top-color:var(--negro);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bounceIn{0%{transform:scale(.2) rotate(-10deg);opacity:0}60%{transform:scale(1.2) rotate(3deg)}80%{transform:scale(.95)}100%{transform:scale(1) rotate(0);opacity:1}}
+.confetti-piece{position:fixed;top:-20px;animation:caer 3s ease-in forwards;z-index:9999;border-radius:2px}
+@keyframes caer{0%{top:-20px;transform:rotate(0) translateX(0);opacity:1}100%{top:110vh;transform:rotate(720deg) translateX(var(--drift));opacity:0}}
+.footer{margin-top:28px;font-size:.73rem;color:rgba(248,244,238,.2);text-align:center;letter-spacing:1px}
+@media(max-width:500px){.card{padding:26px 18px}.app{padding:20px 10px 36px}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bg-grid"></div>
+<div class="app">
+
+  <header class="header">
+    <div class="header-badge" id="header-badge">Evento Especial</div>
+    <h1>RULETA<br>DE PREMIOS</h1>
+    <p>Ingresa tu código y descubre qué ganaste</p>
+  </header>
+
+  <div class="card">
+
+    <!-- ══ PANTALLA 1: TOKEN ══ -->
+    <div class="pantalla activa" id="p-token">
+      <div class="card-title">Tu código de acceso</div>
+      <div class="card-sub">Ingresa el código que recibiste en tu correo de invitación.</div>
+
+      <div class="alerta" id="alerta-token"></div>
+
+      <!-- Estado del evento seleccionado -->
+      <div class="evento-estado" id="estado-evento"></div>
+
+      <!-- Countdown si el evento aún no inicia -->
+      <div class="countdown" id="countdown-box">
+        <div class="countdown-label">El evento inicia en</div>
+        <div class="countdown-grid">
+          <div class="cd-box"><div class="cd-num" id="cd-d">00</div><div class="cd-lbl">Días</div></div>
+          <div class="cd-box"><div class="cd-num" id="cd-h">00</div><div class="cd-lbl">Horas</div></div>
+          <div class="cd-box"><div class="cd-num" id="cd-m">00</div><div class="cd-lbl">Min</div></div>
+          <div class="cd-box"><div class="cd-num" id="cd-s">00</div><div class="cd-lbl">Seg</div></div>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="inp-token">Código de invitación</label>
+        <input type="text" id="inp-token" placeholder="Ej: xK8mP2nQrT4sY7vZ"
+               autocomplete="off" autocapitalize="none" spellcheck="false">
+      </div>
+
+      <div class="campo">
+        <label for="inp-ruleta">Evento</label>
+        <select id="inp-ruleta" onchange="onCambioRuleta()">
+          <option value="">Cargando eventos...</option>
+        </select>
+      </div>
+
+      <button class="btn btn-oro" id="btn-validar" onclick="validarToken()">
+        Verificar código
+      </button>
+    </div>
+
+    <!-- ══ PANTALLA 2: RULETA ══ -->
+    <div class="pantalla" id="p-ruleta">
+      <div class="alerta" id="alerta-ruleta"></div>
+
+      <!-- Chip de estado + fechas del evento -->
+      <div style="margin-bottom:6px">
+        <span class="evento-chip" id="chip-estado">● Activo</span>
+      </div>
+      <div class="evento-fechas" id="evento-fechas-detalle">
+        <div class="fecha-item"><span>Inicio</span><strong id="fecha-ini-det">—</strong></div>
+        <div class="fecha-item" style="text-align:right"><span>Cierre</span><strong id="fecha-fin-det">—</strong></div>
+      </div>
+
+      <div class="bienvenida">
+        <div class="bv-av" id="bv-av">?</div>
+        <div style="flex:1">
+          <div class="bv-n" id="bv-n">Bienvenido</div>
+          <div class="bv-e" id="bv-e"></div>
+        </div>
+        <!-- Botón para cambiar de ruleta sin perder el token -->
+        <button onclick="cambiarRuleta()" title="Girar en otra ruleta"
+          style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);color:var(--oro);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.75rem;font-weight:600;white-space:nowrap;transition:all .2s"
+          onmouseover="this.style.background='rgba(212,175,55,.2)'" onmouseout="this.style.background='rgba(212,175,55,.1)'">
+          🎡 Otra ruleta
+        </button>
+      </div>
+
+      <div class="ruleta-wrap">
+        <div class="puntero"></div>
+        <div class="ruleta-marco">
+          <canvas id="ruleta" width="330" height="330"></canvas>
+          <div class="ruleta-centro"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-giro" id="btn-girar" onclick="girar()">¡ GIRAR !</button>
+    </div>
+
+    <!-- ══ PANTALLA 3: RESULTADO ══ -->
+    <div class="pantalla" id="p-resultado">
+      <div class="resultado">
+        <span class="res-icono" id="res-icono">🏆</span>
+        <div class="res-titulo" id="res-titulo">¡Felicitaciones!</div>
+        <div class="res-caja">
+          <div class="res-label">Tu premio</div>
+          <div class="res-nombre" id="res-premio">—</div>
+        </div>
+        <p class="res-meta" id="res-meta"></p>
+        <div class="divider"></div>
+        <p style="font-size:.82rem;color:var(--blanco-d);line-height:1.6;margin-bottom:20px">
+          Recibirás un correo con los detalles del premio.<br>
+          Comunícate con nosotros para coordinar la entrega.
+        </p>
+
+        <!-- FORMULARIO DE REFERIDO -->
+        <div id="box-referido" style="display:none;margin-top:4px">
+          <div style="background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);border-radius:14px;padding:18px 20px">
+            <div style="font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--oro);font-weight:600;margin-bottom:8px">¿Conoces a alguien que quiera participar?</div>
+            <p style="font-size:.82rem;color:var(--blanco-d);margin-bottom:14px;line-height:1.5">Refiere a un amigo y si es aprobado podrá girar la ruleta también.</p>
+            <div id="alerta-referido" class="alerta" style="margin-bottom:12px"></div>
+            <input type="email" id="inp-ref-email" placeholder="correo@amigo.com"
+              style="width:100%;background:var(--negro-ui);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--blanco);font-family:'DM Sans',sans-serif;font-size:.9rem;padding:10px 14px;outline:none;margin-bottom:10px;transition:border-color .3s">
+            <input type="text" id="inp-ref-nombre" placeholder="Nombre (opcional)"
+              style="width:100%;background:var(--negro-ui);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--blanco);font-family:'DM Sans',sans-serif;font-size:.9rem;padding:10px 14px;outline:none;margin-bottom:12px;transition:border-color .3s">
+            <button onclick="enviarReferido()" id="btn-referir"
+              style="width:100%;background:linear-gradient(135deg,var(--oro-d),var(--oro));color:#000;border:none;border-radius:10px;padding:11px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;letter-spacing:.5px">
+              🤝 Enviar invitación
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /card -->
+  <footer class="footer">RULETA DE PREMIOS &copy; 2026</footer>
+</div>
+
+<script>
+const API  = window.location.origin;
+const COLS = [['#1a1a2e','#D4AF37'],['#16213e','#F5D76E'],['#0f3460','#D4AF37'],
+              ['#1a1a2e','#E8C547'],['#0d1b2a','#D4AF37'],['#1b1b2f','#F0C040'],
+              ['#111827','#D4AF37'],['#1c1c28','#E6BE30'],['#13111c','#D4AF37'],
+              ['#0a0a0f','#F5D76E'],['#1a0a2e','#D4AF37'],['#0a1628','#E8C547']];
+
+const E = { cliente:null, ruletaId:null, premios:[], angulo:0, girando:false };
+let ruletasData  = [];   // todas las ruletas cargadas
+let cdInterval   = null; // intervalo del countdown
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Leer token desde la URL (?token=xxxx)
+  const params   = new URLSearchParams(window.location.search);
+  const tokenURL = params.get('token');
+  if (tokenURL) document.getElementById('inp-token').value = tokenURL;
+
+  cargarRuletas();
+  document.getElementById('inp-token').addEventListener('keydown',
+    e => { if (e.key === 'Enter') validarToken(); });
+});
+
+// ══════════════════════════════════════════════
+// CARGAR RULETAS (todas — para mostrar estado)
+// ══════════════════════════════════════════════
+async function cargarRuletas() {
+  const sel = document.getElementById('inp-ruleta');
+  try {
+    const r = await fetch(`${API}/ruletas/?pagina=1`);
+    const d = await r.json();
+    ruletasData   = d.datos || [];
+    sel.innerHTML = '';
+
+    if (!ruletasData.length) {
+      sel.innerHTML = '<option value="">Sin eventos disponibles</option>';
+      return;
+    }
+
+    ruletasData.forEach(ru => {
+      const estado = estadoRuleta(ru);
+      const iconos = { activo:'🟢', pronto:'🔵', cerrado:'🔴' };
+      const o = document.createElement('option');
+      o.value       = ru.id;
+      o.textContent = `${iconos[estado.tipo]} ${ru.nombre}`;
+      sel.appendChild(o);
+    });
+
+    // Mostrar estado del primero seleccionado
+    onCambioRuleta();
+
+  } catch {
+    sel.innerHTML = '<option value="1">Evento Principal</option>';
+  }
+}
+
+// ══════════════════════════════════════════════
+// CALCULAR ESTADO DE UNA RULETA SEGÚN FECHAS
+// ══════════════════════════════════════════════
+function estadoRuleta(ru) {
+  const ahora  = new Date();
+  const inicio = new Date(ru.fecha_inicio);
+  const cierre = ru.fecha_cierre ? new Date(ru.fecha_cierre) : null;
+
+  if (!ru.activa)              return { tipo:'cerrado', msg:'Este evento no está activo.' };
+  if (ahora < inicio)          return { tipo:'pronto',  msg:'Este evento aún no ha iniciado.', inicio };
+  if (cierre && ahora > cierre) return { tipo:'cerrado', msg:'Este evento ya finalizó.' };
+  return { tipo:'activo', msg:'Este evento está activo. ¡Participa ahora!' };
+}
+
+// ══════════════════════════════════════════════
+// AL CAMBIAR RULETA EN EL SELECT
+// ══════════════════════════════════════════════
+function onCambioRuleta() {
+  const id  = parseInt(document.getElementById('inp-ruleta').value);
+  const ru  = ruletasData.find(r => r.id === id);
+  const est = document.getElementById('estado-evento');
+  const cdBox = document.getElementById('countdown-box');
+  const btn = document.getElementById('btn-validar');
+
+  // Limpiar countdown anterior
+  clearInterval(cdInterval);
+  cdBox.classList.remove('visible');
+
+  if (!ru) { est.className = 'evento-estado'; return; }
+
+  const e = estadoRuleta(ru);
+
+  // Badge en el header
+  document.getElementById('header-badge').textContent =
+    e.tipo === 'activo' ? '🟢 Evento Activo' :
+    e.tipo === 'pronto' ? '🔵 Próximamente' : '🔴 Evento Cerrado';
+
+  // Bloque de estado
+  est.className = `evento-estado ${e.tipo}`;
+  est.innerHTML = `<span class="evento-estado-icon">
+    ${e.tipo==='activo'?'✅': e.tipo==='pronto'?'⏳':'🚫'}
+  </span>${e.msg}
+  ${ru.fecha_inicio ? `<br><small style="opacity:.7">Inicio: ${fmtFecha(ru.fecha_inicio)}</small>` : ''}
+  ${ru.fecha_cierre ? `<small style="opacity:.7"> &nbsp;·&nbsp; Cierre: ${fmtFecha(ru.fecha_cierre)}</small>` : ''}`;
+
+  // Bloquear botón si no está activo
+  btn.disabled = (e.tipo !== 'activo');
+
+  // Countdown si el evento no ha iniciado aún
+  if (e.tipo === 'pronto') {
+    cdBox.classList.add('visible');
+    actualizarCountdown(e.inicio);
+    cdInterval = setInterval(() => actualizarCountdown(e.inicio), 1000);
+  }
+}
+
+// ══════════════════════════════════════════════
+// COUNTDOWN
+// ══════════════════════════════════════════════
+function actualizarCountdown(fechaInicio) {
+  const diff = fechaInicio - new Date();
+  if (diff <= 0) {
+    clearInterval(cdInterval);
+    document.getElementById('countdown-box').classList.remove('visible');
+    cargarRuletas(); // recargar — puede que ya esté activa
+    return;
+  }
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  document.getElementById('cd-d').textContent = String(d).padStart(2,'0');
+  document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+  document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+  document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+}
+
+// ══════════════════════════════════════════════
+// HELPERS UI
+// ══════════════════════════════════════════════
+function ir(id) {
+  document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+  document.getElementById(id).classList.add('activa');
+}
+function alerta(id, msg, tipo='error') {
+  const el = document.getElementById(id);
+  el.className = `alerta ${tipo}`; el.textContent = msg;
+}
+function limpiaAlerta(id) {
+  const el = document.getElementById(id);
+  el.className = 'alerta'; el.textContent = '';
+}
+function fmtFecha(f) {
+  if (!f) return '—';
+  return new Date(f).toLocaleString('es-ES', {
+    day:'2-digit', month:'short', year:'numeric',
+    hour:'2-digit', minute:'2-digit'
+  });
+}
+
+// ══════════════════════════════════════════════
+// PASO 1 — VALIDAR TOKEN
+// ══════════════════════════════════════════════
+async function validarToken() {
+  const token = document.getElementById('inp-token').value.trim();
+  const rulId = document.getElementById('inp-ruleta').value;
+  const btn   = document.getElementById('btn-validar');
+
+  limpiaAlerta('alerta-token');
+  document.getElementById('inp-token').classList.remove('error');
+
+  if (!token) {
+    alerta('alerta-token', 'Ingresa tu código de acceso.');
+    document.getElementById('inp-token').classList.add('error'); return;
+  }
+  if (!rulId) { alerta('alerta-token', 'Selecciona un evento.'); return; }
+
+  // Validación local de fechas antes de llamar a la API
+  const ru = ruletasData.find(r => r.id === parseInt(rulId));
+  if (ru) {
+    const e = estadoRuleta(ru);
+    if (e.tipo === 'pronto') {
+      alerta('alerta-token', `⏳ ${e.msg} Inicia el ${fmtFecha(ru.fecha_inicio)}.`, 'info'); return;
+    }
+    if (e.tipo === 'cerrado') {
+      alerta('alerta-token', `🚫 ${e.msg}`, 'info'); return;
+    }
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Verificando...';
+
+  try {
+    // Pasar ruleta_id para verificar si ya participó en esa ruleta
+    const r = await fetch(`${API}/ruleta/validar/${encodeURIComponent(token)}?ruleta_id=${rulId}`);
+    if (!r.ok) {
+      const e = await r.json();
+      throw new Error(e.detail || 'Código inválido.');
+    }
+    const d = await r.json();
+    E.cliente  = d.cliente;
+    E.ruletaId = parseInt(rulId);
+
+    await cargarPremios(E.ruletaId);
+
+    const nombre = [d.cliente.nombres, d.cliente.apellidos].filter(Boolean).join(' ')
+                   || d.cliente.email;
+    const ini = (d.cliente.nombres?.[0] || d.cliente.email[0]).toUpperCase();
+
+    document.getElementById('bv-n').textContent  = `Hola, ${nombre}`;
+    document.getElementById('bv-e').textContent  = d.cliente.email;
+    document.getElementById('bv-av').textContent = ini;
+
+    // Mostrar chip + fechas
+    if (ru) {
+      const chip = document.getElementById('chip-estado');
+      chip.className = 'evento-chip chip-activo';
+      chip.innerHTML = '● Activo';
+      document.getElementById('fecha-ini-det').textContent = fmtFecha(ru.fecha_inicio);
+      document.getElementById('fecha-fin-det').textContent = ru.fecha_cierre ? fmtFecha(ru.fecha_cierre) : 'Sin límite';
+    }
+
+    dibujarRuleta(0);
+    ir('p-ruleta');
+
+    // Si ya participó en esta ruleta, mostrar aviso pero permitir ver el resultado anterior
+    if (d.ya_participo && d.participacion_previa) {
+      const p = d.participacion_previa;
+      alerta('alerta-ruleta',
+        `Ya participaste en esta ruleta. Tu premio: ${p.premio} (${p.fecha?.slice(0,10)})`,
+        'info');
+      document.getElementById('btn-girar').disabled = true;
+      document.getElementById('btn-girar').textContent = '✅ Ya participaste';
+    }
+
+  } catch (e) {
+    alerta('alerta-token', e.message);
+    document.getElementById('inp-token').classList.add('error');
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = 'Verificar código';
+  }
+}
+
+// ══════════════════════════════════════════════
+// CARGAR PREMIOS
+// ══════════════════════════════════════════════
+async function cargarPremios(id) {
+  try {
+    const r = await fetch(`${API}/premios/?ruleta_id=${id}&disponibles=true&pagina=1`);
+    const d = await r.json();
+    E.premios = d.datos || [];
+  } catch { E.premios = []; }
+  if (!E.premios.length)
+    E.premios = [{ nombre:'Premio A' },{ nombre:'Premio B' },
+                 { nombre:'Premio C' },{ nombre:'¡Suerte!' }];
+}
+
+// ══════════════════════════════════════════════
+// DIBUJAR RULETA
+// ══════════════════════════════════════════════
+function dibujarRuleta(extra = 0) {
+  const cv  = document.getElementById('ruleta');
+  const ctx = cv.getContext('2d');
+  const cx  = cv.width / 2, cy = cv.height / 2, r = cx - 4;
+  const n   = E.premios.length, sl = (2 * Math.PI) / n;
+  const a0  = E.angulo + extra - Math.PI / 2;
+
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  E.premios.forEach((p, i) => {
+    const ini = a0 + i * sl, fin = ini + sl, med = ini + sl / 2;
+    const par = COLS[i % COLS.length];
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, ini, fin); ctx.closePath();
+    ctx.fillStyle = par[0]; ctx.fill();
+    ctx.strokeStyle = 'rgba(212,175,55,.2)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(med);
+    ctx.textAlign = 'right';
+    ctx.font = `700 ${Math.max(11, Math.floor(r * .09))}px DM Sans,sans-serif`;
+    ctx.fillStyle = par[1]; ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 4;
+    let txt = p.nombre || ''; if (txt.length > 13) txt = txt.slice(0, 12) + '…';
+    ctx.fillText(txt, r - 10, 5); ctx.restore();
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ini);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(r, 0);
+    ctx.strokeStyle = 'rgba(212,175,55,.3)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(cx, cy, 20, 0, 2 * Math.PI);
+  ctx.fillStyle = '#0A0A0F'; ctx.fill();
+  ctx.strokeStyle = 'rgba(212,175,55,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+// ══════════════════════════════════════════════
+// PASO 2 — GIRAR
+// ══════════════════════════════════════════════
+async function girar() {
+  if (E.girando) return;
+
+  // Doble validación de fechas antes de girar
+  const ru = ruletasData.find(r => r.id === E.ruletaId);
+  if (ru) {
+    const e = estadoRuleta(ru);
+    if (e.tipo !== 'activo') {
+      alerta('alerta-ruleta', `🚫 ${e.msg}`);
+      return;
+    }
+  }
+
+  E.girando = true;
+  const btn = document.getElementById('btn-girar');
+  limpiaAlerta('alerta-ruleta');
+  btn.disabled  = true;
+  btn.innerHTML = '<div class="spinner" style="border-top-color:#000"></div> Girando...';
+
+  const token = document.getElementById('inp-token').value.trim();
+
+  const promAPI = fetch(`${API}/ruleta/girar/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, ruleta_id: E.ruletaId }),
+  }).then(r => r.json()).catch(e => ({ error: e.message }));
+
+  const vueltas   = 5 + Math.random() * 4;
+  const angTotal  = vueltas * 2 * Math.PI + Math.random() * 2 * Math.PI;
+  const dur       = 4500;
+  const ini       = performance.now();
+  const ease      = t => 1 - Math.pow(1 - t, 4);
+
+  await new Promise(res => {
+    function fr(now) {
+      const t = Math.min((now - ini) / dur, 1);
+      dibujarRuleta(angTotal * ease(t));
+      if (t < 1) requestAnimationFrame(fr);
+      else { E.angulo = (E.angulo + angTotal) % (2 * Math.PI); res(); }
+    }
+    requestAnimationFrame(fr);
+  });
+
+  const resultado = await promAPI;
+  btn.disabled  = false;
+  btn.innerHTML = '¡ GIRAR !';
+  E.girando = false;
+
+  await new Promise(r => setTimeout(r, 300));
+  mostrarResultado(resultado);
+}
+
+// ══════════════════════════════════════════════
+// PASO 3 — RESULTADO
+// ══════════════════════════════════════════════
+function mostrarResultado(d) {
+  const gano = !d.error && d.premio_nombre && d.premio_nombre !== 'Sin premio';
+  document.getElementById('res-icono').textContent  = gano ? '🏆' : (d.error ? '⚠️' : '🎯');
+  document.getElementById('res-titulo').textContent = gano ? '¡Felicitaciones!' : (d.error ? 'Ocurrió un error' : '¡Gracias por participar!');
+  document.getElementById('res-premio').textContent = d.error || d.premio_nombre || 'Sin premio esta vez';
+  document.getElementById('res-meta').textContent   = d.mensaje || '';
+  if (gano) confetti();
+  ir('p-resultado');
+  // Mostrar formulario de referido siempre al llegar al resultado
+  setTimeout(() => mostrarFormReferido(), 1200);
+}
+
+// ══════════════════════════════════════════════
+// CONFETTI
+// ══════════════════════════════════════════════
+// ── Cambiar de ruleta con el mismo token ─────────
+function cambiarRuleta() {
+  // Limpiar estado de la ruleta actual
+  limpiaAlerta('alerta-ruleta');
+  const btn = document.getElementById('btn-girar');
+  btn.disabled  = false;
+  btn.innerHTML = '¡ GIRAR !';
+
+  // Volver a la pantalla de token con el token precargado
+  ir('p-token');
+  // onCambioRuleta() verificará el nuevo estado
+}
+
+function confetti() {
+  const cs = ['#D4AF37','#F5D76E','#FFFFFF','#FFD700','#B8860B','#FFF8DC'];
+  for (let i = 0; i < 80; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText = `left:${Math.random()*100}vw;background:${cs[Math.floor(Math.random()*cs.length)]};width:${6+Math.random()*8}px;height:${8+Math.random()*10}px;transform:rotate(${Math.random()*360}deg);animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*.5}s;--drift:${-80+Math.random()*160}px;border-radius:${Math.random()>.5?'50%':'2px'}`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }, i * 25);
+  }
+}
+
+// ══════════════════════════════════════════════
+// REFERIDOS
+// ══════════════════════════════════════════════
+function mostrarFormReferido() {
+  document.getElementById('box-referido').style.display = 'block';
+}
+
+async function enviarReferido() {
+  const email  = document.getElementById('inp-ref-email').value.trim();
+  const nombre = document.getElementById('inp-ref-nombre').value.trim();
+  const token  = document.getElementById('inp-token').value.trim();
+  const alerta = document.getElementById('alerta-referido');
+  const btn    = document.getElementById('btn-referir');
+
+  alerta.className = 'alerta'; alerta.textContent = '';
+
+  if (!email || !email.includes('@')) {
+    alerta.className = 'alerta error';
+    alerta.textContent = 'Ingresa un email válido.'; return;
+  }
+
+  btn.disabled = true; btn.textContent = '⏳ Enviando...';
+
+  try {
+    let url = `/referidos/?token_referidor=${encodeURIComponent(token)}&email_referido=${encodeURIComponent(email)}&ruleta_id=${E.ruletaId}`;
+    if (nombre) url += `&nombres_referido=${encodeURIComponent(nombre)}`;
+
+    const r = await fetch(`${API}${url}`, { method: 'POST' });
+    const d = await r.json();
+
+    if (!r.ok) throw new Error(d.detail || 'Error al enviar');
+
+    alerta.className = 'alerta exito';
+    alerta.textContent = `✅ Solicitud enviada. ${nombre || email} será notificado cuando sea aprobado.`;
+    document.getElementById('inp-ref-email').value  = '';
+    document.getElementById('inp-ref-nombre').value = '';
+    btn.textContent = '✅ Enviado';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '🤝 Referir a otra persona'; }, 2500);
+
+  } catch (e) {
+    alerta.className = 'alerta error';
+    alerta.textContent = e.message;
+    btn.disabled = false; btn.textContent = '🤝 Enviar invitación';
+  }
+}
+</script>
+</body>
+</html>

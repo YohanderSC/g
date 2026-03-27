@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     APP_RELOAD: bool = True
 
     # ── Correo SMTP ────────────────────────────────
-    MAIL_USERNAME:  str  = ""
-    MAIL_PASSWORD:  str  = ""
-    MAIL_FROM:      str  = "no-reply@ruleta.com"
+    MAIL_USERNAME:  str  = "yohandercartagena@gmail.com"
+    MAIL_PASSWORD:  str  = "qromocdlnkhtwbht"
+    MAIL_FROM:      str  = "yohandercartagena@gmail.com"
     MAIL_FROM_NAME: str  = "Ruleta de Premios"
     MAIL_PORT:      int  = 587
     MAIL_SERVER:    str  = "smtp.gmail.com"

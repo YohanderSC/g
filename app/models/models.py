@@ -288,9 +288,7 @@ class CorreoLog(Base):
     estado      = Column(SAEnum(EstadoCorreo), default=EstadoCorreo.pendiente)
     asunto      = Column(String(255), nullable=True)
     fecha_envio = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # ID del lote de envío masivo
-    lote_id     = Column(String(50), nullable=True)   
+    lote_id     = Column(String(50), nullable=True)   # ID del lote de envío masivo
     error_msg   = Column(Text, nullable=True)
 
     cliente = relationship("Cliente", back_populates="correos_log")

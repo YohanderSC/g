@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Iniciar Sesión</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --oro:#D4AF37;--oro-l:#F5D76E;--oro-d:#9A7B1A;
+  --bg:#0A0A0F;--card:#12121A;--ui:#1C1C28;
+  --txt:#F0EDE8;--txt-d:rgba(240,237,232,.55);--txt-dd:rgba(240,237,232,.28);
+  --verde:#27AE60;--rojo:#E74C3C;
+  --tr:.25s cubic-bezier(.4,0,.2,1);
+}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow:hidden}
+.bg{position:fixed;inset:0;background:radial-gradient(ellipse 70% 60% at 30% 20%,rgba(212,175,55,.07),transparent 60%),radial-gradient(ellipse 50% 70% at 80% 80%,rgba(212,175,55,.05),transparent 60%),var(--bg)}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(212,175,55,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.03) 1px,transparent 1px);background-size:40px 40px}
+.wrap{position:relative;z-index:1;height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{
+  background:var(--card);border:1px solid rgba(212,175,55,.15);
+  border-radius:24px;padding:44px 40px;width:100%;max-width:420px;
+  box-shadow:0 24px 64px rgba(0,0,0,.6);position:relative;overflow:hidden;
+}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--oro),transparent)}
+/* Logo */
+.logo{text-align:center;margin-bottom:32px}
+.logo-icon{font-size:2.8rem;margin-bottom:10px}
+.logo-title{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:3px;background:linear-gradient(135deg,var(--oro-l),var(--oro));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-size:.78rem;color:var(--txt-dd);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+/* Form */
+.campo{margin-bottom:18px}
+.campo label{display:block;font-size:.7rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--oro);margin-bottom:7px}
+.inp-wrap{position:relative}
+.campo input{
+  width:100%;background:var(--ui);border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;color:var(--txt);font-family:'DM Sans',sans-serif;
+  font-size:.95rem;padding:13px 46px 13px 16px;outline:none;
+  transition:border-color var(--tr),box-shadow var(--tr);
+}
+.campo input:focus{border-color:var(--oro);box-shadow:0 0 0 3px rgba(212,175,55,.12)}
+.campo input.error{border-color:var(--rojo);box-shadow:0 0 0 3px rgba(231,76,60,.15)}
+.toggle-pass{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--txt-dd);
+  font-size:1rem;padding:4px;transition:color var(--tr);
+}
+.toggle-pass:hover{color:var(--txt)}
+/* Botón */
+.btn-login{
+  width:100%;padding:15px;background:linear-gradient(135deg,var(--oro-d),var(--oro));
+  color:#000;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;
+  font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.5px;
+  box-shadow:0 4px 20px rgba(212,175,55,.3);
+  transition:all var(--tr);display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn-login:hover:not(:disabled){box-shadow:0 6px 30px rgba(212,175,55,.5);transform:translateY(-1px)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* Alerta */
+.alerta{
+  padding:11px 14px;border-radius:10px;font-size:.84rem;
+  line-height:1.5;margin-bottom:16px;border-left:3px solid;
+  display:none;
+}
+.alerta.error{display:block;background:rgba(231,76,60,.1);border-color:var(--rojo);color:#FF8A80}
+.alerta.exito{display:block;background:rgba(39,174,96,.1);border-color:var(--verde);color:#69F0AE}
+/* Spinner */
+.spinner{width:17px;height:17px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Credenciales por defecto */
+.hint{text-align:center;margin-top:20px;font-size:.75rem;color:var(--txt-dd);line-height:1.6;
+  background:rgba(212,175,55,.05);border:1px solid rgba(212,175,55,.1);border-radius:8px;padding:10px 14px}
+.hint strong{color:var(--oro)}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bg-grid"></div>
+<div class="wrap">
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">🎡</div>
+      <div class="logo-title">Panel Admin</div>
+      <div class="logo-sub">Ruleta de Premios</div>
+    </div>
+
+    <div class="alerta" id="alerta"></div>
+
+    <div class="campo">
+      <label for="inp-user">Usuario</label>
+      <div class="inp-wrap">
+        <input type="text" id="inp-user" placeholder="admin"
+               autocomplete="username" autocapitalize="none"
+               onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()">
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="inp-pass">Contraseña</label>
+      <div class="inp-wrap">
+        <input type="password" id="inp-pass" placeholder="••••••••"
+               autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')iniciarSesion()">
+        <button class="toggle-pass" type="button" onclick="togglePass()" title="Mostrar/ocultar">
+          👁️
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-login" id="btn-login" onclick="iniciarSesion()">
+      Iniciar sesión
+    </button>
+
+    <div class="hint">
+      Credenciales iniciales: <strong>admin</strong> / <strong>admin123</strong><br>
+      Cámbialas desde el panel después del primer acceso.
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+// Si ya hay token válido, redirigir directo al admin
+(async () => {
+  const token = localStorage.getItem('admin_token');
+  if (token) {
+    try {
+      const r = await fetch(`${API}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (r.ok) { window.location.href = '/admin'; return; }
+    } catch {}
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_data');
+  }
+})();
+
+function togglePass() {
+  const inp = document.getElementById('inp-pass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function iniciarSesion() {
+  const user = document.getElementById('inp-user').value.trim();
+  const pass = document.getElementById('inp-pass').value;
+  const btn  = document.getElementById('btn-login');
+  const al   = document.getElementById('alerta');
+
+  al.className = 'alerta'; al.textContent = '';
+  document.getElementById('inp-user').classList.remove('error');
+  document.getElementById('inp-pass').classList.remove('error');
+
+  if (!user) {
+    al.className = 'alerta error'; al.textContent = 'Ingresa el usuario.';
+    document.getElementById('inp-user').classList.add('error'); return;
+  }
+  if (!pass) {
+    al.className = 'alerta error'; al.textContent = 'Ingresa la contraseña.';
+    document.getElementById('inp-pass').classList.add('error'); return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Verificando...';
+
+  try {
+    const r = await fetch(`${API}/auth/login`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ username: user, password: pass }),
+    });
+
+    const d = await r.json();
+
+    if (!r.ok) {
+      al.className = 'alerta error';
+      al.textContent = d.detail || 'Credenciales incorrectas.';
+      document.getElementById('inp-user').classList.add('error');
+      document.getElementById('inp-pass').classList.add('error');
+      return;
+    }
+
+    // Guardar token y datos del admin
+    localStorage.setItem('admin_token', d.access_token);
+    localStorage.setItem('admin_data',  JSON.stringify(d.admin));
+
+    al.className = 'alerta exito';
+    al.textContent = `✅ Bienvenido, ${d.admin.nombre || d.admin.username}. Redirigiendo...`;
+
+    setTimeout(() => { window.location.href = '/admin'; }, 800);
+
+  } catch (e) {
+    al.className = 'alerta error';
+    al.textContent = 'Error de conexión con el servidor.';
+  } finally {
+    btn.disabled  = false;
+    btn.innerHTML = 'Iniciar sesión';
+  }
+}
+</script>
+</body>
+</html>
