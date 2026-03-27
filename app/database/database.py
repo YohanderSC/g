@@ -30,7 +30,7 @@ import os
 # ─────────────────────────────────────────────────────────
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    #"postgresql+psycopg://postgres:Conejo.30@localhost:8080/ruleta_db" 
+    "postgresql+psycopg://postgres:Conejo.30@localhost:8080/ruleta_db" 
     # jajaja lo tengo configurado asi
     #"postgresql+psycopg://postgres:postgres@localhost:5432/ruleta_db"
 )
