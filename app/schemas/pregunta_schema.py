@@ -25,7 +25,7 @@ class PreguntaResponse(PreguntaBase):
     id: int
 
     class Config:
-        from_attributes = True
+        from_attributes = False
 
 
 class PreguntaListResponse(BaseModel):

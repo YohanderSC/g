@@ -212,7 +212,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
   font-size:.88rem;padding:10px 14px;outline:none;
   transition:border-color var(--tr),box-shadow var(--tr);
 }
-.form-row select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23D4AF37' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;background-color:var(--card2);cursor:pointer}
+.form-row select{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23D4AF37' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;background-color:var(--card2);cursor:pointer}
 .form-row select option{background:var(--card2);color:var(--txt)}
 .form-row textarea{resize:vertical;min-height:80px}
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--oro);box-shadow:0 0 0 3px rgba(212,175,55,.12)}
@@ -322,10 +322,12 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
       <span class="nav-icon">🏢</span><span>Agencias</span>
       <span class="nav-badge" id="badge-agencias">0</span>
     </div>
+    <!-- Preguntas de Seguridad — desactivado temporalmente
     <div class="nav-item" onclick="ir('preguntas')" id="nav-preguntas">
       <span class="nav-icon">🔐</span><span>Preguntas</span>
       <span class="nav-badge" id="badge-preguntas">0</span>
     </div>
+    -->
 
     <div class="nav-section">Operaciones</div>
     <div class="nav-item" onclick="ir('encuestas')" id="nav-encuestas">
@@ -1027,7 +1029,7 @@ async function cargarPreguntas(pag = 1) {
           </div></td>
         </tr>`).join('')
       : vacioHTML(4);
-  } catch (e) { toast('Error cargando preguntas', 'err'); }
+  } catch (e) { /*toast('Error cargando preguntas', 'err');*/ }
 }
 
 // ═══════════════════════════════════════════════════

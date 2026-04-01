@@ -366,7 +366,7 @@ const COLS = [
 // Sectores sin premio — gris con texto suave
 const COLS_SP = [
   ['#2a2a2a','rgba(255,255,255,0.35)'],
-  ['#222222','rgba(255,255,255,0.30)'],
+  ['#222222','#FFFFFF','rgba(255,255,255,0.30)'],
 ];
 
 const E = {
@@ -762,13 +762,50 @@ async function cargarPremios(id) {
 
     // Crear sectores "sin premio" proporcionales
     // Al menos 1 sector sin premio si sumProb < 100
-    const sinPremioCount = porcSinPremio > 0
-      ? Math.max(1, Math.round(porcSinPremio / (100 / (premiosReales.length + 2))))
-      : 0;
+    const sinPremioCount = premiosReales.length;
 
-    const textosSinPremio = ['¡Inténtalo!','¡Suerte!','Otra vez','¡Ánimo!'];
+    const textosSinPremio = [
+      '¡Inténtalo de nuevo!', '¡Sigue participando!', '¡Más suerte la próxima!',
+      '¡No te rindas!', '¡Casi lo logras!', '¡Suerte para la próxima!',
+      '¡No fue esta vez!', '¡Sigue intentándolo!', '¡La próxima será!',
+      '¡No te desanimes!', '¡Sigue participando!', '¡Casi, casi!',
+      '¡Sigue intentando!', '¡Casi lo logras!', '¡Suerte para Próximo!', 'Has Perdido', '¡Ánimo para Próximo!',
+      '¡Sigue intentando!', '¡La próxima será!', '¡No te rindas!', '¡Persevera!',
+      '¡A por la próxima!', '¡Mejor suerte mañana!', '¡Continúa participando!',
+      '¡El esfuerzo cuenta!', '¡No fue esta vez!', '¡Cada intento te acerca!',
+      '¡Vuelve a intentarlo!', '¡La constancia vence!', '¡Sigue adelante!',
+      '¡No pierdas la fe!', '¡Casi, casi!', '¡Por un pelo!', '¡Qué lástima!',
+      '¡Ups!', '¡Fail!', '¡No hubo suerte!', '¡Qué pena!', '¡Lo siento!',
+      '¡Ay no!', '¡Bummer!', '¡Chance!', '¡Otra vez!', '¡Ni con trampa!',
+      '¡Hasta el perro se asustó!', '¡La vida es así!', '¡No todo es ganar!',
+      '¡Al menos lo intentaste!', '¡Habrá que seguir!', '¡No siempre se gana!',
+      '¡Es parte del juego!', '¡A veces se gana, a veces se aprende!',
+      '¡El éxito está cerca!', '¡Sigue soñando!', '¡Tú puedes lograrlo!',
+      '¡No te desanimes!', '¡Cree en ti!', '¡Eres más fuerte!', '¡La victoria te espera!',
+      '¡Un paso más!', '😅 ¡Por poco!', '🙈 ¡No lo viste venir!', '🍀 ¡La próxima sale!',
+      '💪 ¡A seguir intentando!', '🎲 ¡Mala tirada!', '⚡ ¡La suerte no te alcanzó!',
+      '🌟 ¡Brillarás la próxima!', '✨ ¡Sigue participando!', '¡Fue un honor participar!',
+      '¡Gracias por jugar!', '¡Hasta la próxima!', '¡Te esperamos de vuelta!',
+      '¡No te rindas ahora!', '¡El mejor premio es participar!', '¡La experiencia vale!',
+      '¡Siempre hay una próxima vez!', '¡No fue suficiente!', '¡Tan cerca y tan lejos!',
+      '¡Rozaste la victoria!', '¡Estuviste a punto!', '¡Un suspiro te separó!',
+      '¡Milímetros!', '¡Por un segundo!', '¡El margen fue mínimo!', '¡La gloria te espera!',
+      '¡Tu momento llegará!', '¡La paciencia es clave!', '¡Resiste un poco más!',
+      '¡Vas por buen camino!', '¡No abandones!', '¡La perseverancia paga!',
+      '¡Sigue participando!', '¡Vuelve a intentarlo mañana!', '¡Hay más oportunidades!',
+      '¡No es el final!', '¡Esto apenas comienza!', '¡Lo importante es participar!',
+      '¡Disfrutaste el juego!', '¡La diversión está asegurada!', '¡Jugar ya es ganar!',
+      '¡El verdadero premio es la amistad!', '¡Ya vendrán tiempos mejores!',
+      '¡Las rachas se rompen!', '¡Tu racha positiva llegará!', '¡El éxito no es inmediato!',
+      '¡Los grandes logros toman tiempo!', '¡Sembrando para cosechar!', '¡Hoy siembras, mañana cosechas!'
+    ];
+
+    function obtenerTextoSinPremio() {
+      return textosSinPremio[Math.floor(Math.random() * textosSinPremio.length)];
+    }
+
     const sectoresSinPremio = Array.from({length: sinPremioCount}, (_,i) => ({
-      nombre: textosSinPremio[i % textosSinPremio.length],
+      nombre: obtenerTextoSinPremio() /*textosSinPremio[i % textosSinPremio.length]*/,
       _sinPremio: true,
     }));
 
