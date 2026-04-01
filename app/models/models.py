@@ -133,6 +133,12 @@ class Ruleta(Base):
     max_giros    = Column(Integer, default=1)
     created_at   = Column(DateTime(timezone=True), server_default=func.now())
     updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
+    #Temas de la ruleta
+    tema         = Column(String(50),  nullable=True, default='default')
+    tema_imagen  = Column(String(500), nullable=True)
+    tema_color1  = Column(String(7),   nullable=True)
+    tema_color2  = Column(String(7),   nullable=True)
+    tema_color3  = Column(String(7),   nullable=True)
 
     premios         = relationship("Premio", back_populates="ruleta")
     participaciones = relationship("Participacion", back_populates="ruleta")

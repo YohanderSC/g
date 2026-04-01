@@ -8,13 +8,14 @@ Maneja:
   - Login y validación de sesión
 ====================================================
 """
+
 import os
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from jose import JWTError, jwt
 
 from app.database.database import get_db
@@ -23,27 +24,26 @@ from app.models.admin_model import Administrador
 # ── Configuración ─────────────────────────────────
 # SECURITY: La SECRET_KEY debe definirse en variable de entorno
 # Generar con: python -c "import secrets; print(secrets.token_hex(32))"
-SECRET_KEY  = os.getenv("JWT_SECRET_KEY", "DEV-ONLY-CHANGE-IN-PRODUCTION")
-ALGORITHM   = "HS256"
-EXPIRE_HORAS = 8   # Sesión expira en 8 horas
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "DEV-ONLY-CHANGE-IN-PRODUCTION")
+ALGORITHM = "HS256"
+EXPIRE_HORAS = 8  # Sesión expira en 8 horas
 
-# ── Contexto de hashing ───────────────────────────
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-bearer  = HTTPBearer(auto_error=False)
+bearer = HTTPBearer(auto_error=False)
 
 
 # ─────────────────────────────────────────────────
-# HELPERS DE CONTRASEÑA
+# HELPERS DE CONTRASEÑA (usando bcrypt directamente)
 # ─────────────────────────────────────────────────
 def hashear_password(password: str) -> str:
-    # Bcrypt tiene límite de 72 bytes, truncar si es necesario
-    password_bloqueada = password[:72] if len(password.encode('utf-8')) > 72 else password
-    return pwd_ctx.hash(password_bloqueada)
+    password_bytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password_bytes, salt).decode("utf-8")
+
 
 def verificar_password(password: str, hashed: str) -> bool:
-    # También truncar para verificación
-    password_bloqueada = password[:72] if len(password.encode('utf-8')) > 72 else password
-    return pwd_ctx.verify(password_bloqueada, hashed)
+    password_bytes = password.encode("utf-8")
+    hashed_bytes = hashed.encode("utf-8")
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 # ─────────────────────────────────────────────────
@@ -53,6 +53,7 @@ def crear_token(data: dict) -> str:
     payload = data.copy()
     payload["exp"] = datetime.utcnow() + timedelta(hours=EXPIRE_HORAS)
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
 
 def decodificar_token(token: str) -> dict:
     try:
@@ -69,10 +70,14 @@ def decodificar_token(token: str) -> dict:
 # LOGIN
 # ─────────────────────────────────────────────────
 def login(db: Session, username: str, password: str) -> dict:
-    admin = db.query(Administrador).filter(
-        Administrador.username == username,
-        Administrador.activo   == True,
-    ).first()
+    admin = (
+        db.query(Administrador)
+        .filter(
+            Administrador.username == username,
+            Administrador.activo == True,
+        )
+        .first()
+    )
 
     if not admin or not verificar_password(password, admin.password_hash):
         raise HTTPException(
@@ -84,24 +89,26 @@ def login(db: Session, username: str, password: str) -> dict:
     admin.ultimo_login = datetime.utcnow()
     db.commit()
 
-    token = crear_token({
-        "sub":        str(admin.id),
-        "username":   admin.username,
-        "nombre":     admin.nombre or admin.username,
-        "superadmin": admin.superadmin,
-    })
+    token = crear_token(
+        {
+            "sub": str(admin.id),
+            "username": admin.username,
+            "nombre": admin.nombre or admin.username,
+            "superadmin": admin.superadmin,
+        }
+    )
 
     return {
         "access_token": token,
-        "token_type":   "bearer",
-        "expires_in":   EXPIRE_HORAS * 3600,
+        "token_type": "bearer",
+        "expires_in": EXPIRE_HORAS * 3600,
         "admin": {
-            "id":         admin.id,
-            "username":   admin.username,
-            "nombre":     admin.nombre,
-            "email":      admin.email,
+            "id": admin.id,
+            "username": admin.username,
+            "nombre": admin.nombre,
+            "email": admin.email,
             "superadmin": admin.superadmin,
-        }
+        },
     }
 
 
@@ -122,10 +129,14 @@ def get_admin_actual(
     payload = decodificar_token(credentials.credentials)
     admin_id = payload.get("sub")
 
-    admin = db.query(Administrador).filter(
-        Administrador.id     == int(admin_id),
-        Administrador.activo == True,
-    ).first()
+    admin = (
+        db.query(Administrador)
+        .filter(
+            Administrador.id == int(admin_id),
+            Administrador.activo == True,
+        )
+        .first()
+    )
 
     if not admin:
         raise HTTPException(
@@ -147,12 +158,12 @@ def crear_admin_inicial(db: Session):
     existe = db.query(Administrador).first()
     if not existe:
         admin = Administrador(
-            username      = "admin",
-            email         = "admin@ruleta.com",
-            nombre        = "Administrador",
-            password_hash = hashear_password("admin123"),
-            superadmin    = True,
-            activo        = True,
+            username="admin",
+            email="admin@ruleta.com",
+            nombre="Administrador",
+            password_hash=hashear_password("admin123"),
+            superadmin=True,
+            activo=True,
         )
         db.add(admin)
         db.commit()

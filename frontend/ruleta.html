@@ -15,7 +15,57 @@
   --sombra:0 24px 64px rgba(0,0,0,.6);--tr:.3s cubic-bezier(.4,0,.2,1);
 }
 html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow-x:hidden}
-.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(212,175,55,.08),transparent 60%),radial-gradient(ellipse 60% 80% at 80% 90%,rgba(212,175,55,.05),transparent 60%),var(--bg)}
+
+/* ═══ TEMAS DE RULETA - Se aplican cuando el body tiene clase tema-X ═══ */
+body.tema-san_valentin { 
+  --oro:#FF6B9D !important;--oro-l:#FFB3CC !important;--oro-d:#C2185B !important; 
+  background-color: #1a0011 !important;
+}
+body.tema-san_valentin .bg {
+  background: radial-gradient(ellipse 70% 60% at 30% 20%,rgba(194,24,91,.15),transparent 60%),radial-gradient(ellipse 60% 70% at 80% 80%,rgba(255,107,157,.1),transparent 60%),#1a0011 !important;
+}
+
+body.tema-dia_madres { 
+  --oro:#E91E8C !important;--oro-l:#F8BBD9 !important;--oro-d:#880E4F !important; 
+  background-color: #1a0a15 !important;
+}
+body.tema-dia_madres .bg {
+  background: radial-gradient(ellipse 70% 60% at 30% 20%,rgba(233,30,140,.12),transparent 60%),radial-gradient(ellipse 50% 70% at 80% 80%,rgba(156,39,176,.08),transparent 60%),#1a0a15 !important;
+}
+
+body.tema-mundial { 
+  --oro:#4CAF50 !important;--oro-l:#8BC34A !important;--oro-d:#1B5E20 !important; 
+  background-color: #0a120a !important;
+}
+body.tema-mundial .bg {
+  background: radial-gradient(ellipse 70% 60% at 30% 20%,rgba(76,175,80,.12),transparent 60%),radial-gradient(ellipse 50% 70% at 80% 80%,rgba(33,150,243,.08),transparent 60%),#0a120a !important;
+}
+
+body.tema-navidad { 
+  --oro:#FFD700 !important;--oro-l:#FFEB3B !important;--oro-d:#F57F17 !important; 
+  background-color: #0a1a0a !important;
+}
+body.tema-navidad .bg {
+  background: radial-gradient(ellipse 70% 60% at 30% 20%,rgba(76,175,80,.12),transparent 60%),radial-gradient(ellipse 50% 70% at 80% 80%,rgba(244,67,54,.1),transparent 60%),#0a1a0a !important;
+}
+
+body.tema-halloween { 
+  --oro:#FF6D00 !important;--oro-l:#FFE0B2 !important;--oro-d:#E65100 !important; 
+  background-color: #0d0009 !important;
+}
+body.tema-halloween .bg {
+  background: radial-gradient(ellipse 70% 60% at 30% 20%,rgba(255,109,0,.1),transparent 60%),radial-gradient(ellipse 50% 70% at 80% 80%,rgba(156,39,176,.08),transparent 60%),#0d0009 !important;
+}
+
+body.tema-verano { 
+  --oro:#00BCD4 !important;--oro-l:#B2EBF2 !important;--oro-d:#006064 !important; 
+  background-color: #001a1a !important;
+}
+body.tema-verano .bg {
+  background: radial-gradient(ellipse 70% 60% at 30% 20%,rgba(0,188,212,.12),transparent 60%),radial-gradient(ellipse 50% 70% at 80% 80%,rgba(255,235,59,.08),transparent 60%),#001a1a !important;
+}
+
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(212,175,55,.08),transparent 60%),radial-gradient(ellipse 60% 80% at 80% 90%,rgba(212,175,55,.05),transparent 60%),var(--bg) !important}
 .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(212,175,55,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.03) 1px,transparent 1px);background-size:40px 40px}
 .app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px 48px}
 
@@ -366,7 +416,7 @@ const COLS = [
 // Sectores sin premio — gris con texto suave
 const COLS_SP = [
   ['#2a2a2a','rgba(255,255,255,0.35)'],
-  ['#222222','rgba(255,255,255,0.30)'],
+  ['#222222','#FFFFFF','rgba(255,255,255,0.30)'],
 ];
 
 const E = {
@@ -410,8 +460,10 @@ document.addEventListener('DOMContentLoaded', () => {
 async function cargarRuletas() {
   const sel = document.getElementById('inp-ruleta');
   try {
+    console.log('Cargando ruletas...');
     const r = await fetch(`${API}/ruletas/?pagina=1`);
     const d = await r.json();
+    console.log('Ruletas recibidas:', d.datos);
     ruletasData   = d.datos || [];
     sel.innerHTML = '';
     if (!ruletasData.length) { sel.innerHTML = '<option value="">Sin eventos</option>'; return; }
@@ -420,6 +472,7 @@ async function cargarRuletas() {
       const e = estadoRuleta(ru);
       const o = document.createElement('option');
       o.value = ru.id; o.textContent = `${iconos[e.tipo]} ${ru.nombre}`;
+      console.log('Ruleta en dropdown:', ru.id, ru.nombre, 'tema:', ru.tema);
       sel.appendChild(o);
     });
   } catch { sel.innerHTML = '<option value="1">Evento Principal</option>'; }
@@ -436,13 +489,67 @@ function estadoRuleta(ru) {
 }
 
 function onCambioRuleta() {
+  console.log('>>> onCambioRuleta INICIADO <<<');
   const id  = parseInt(document.getElementById('inp-ruleta').value);
-  const ru  = ruletasData.find(r => r.id === id);
+  console.log('ID del select:', id);
+  const ru  = ruletasData.find(r => Number(r.id) === Number(id));
   const est = document.getElementById('estado-evento');
   const btn = document.getElementById('btn-validar');
   clearInterval(cdInterval);
   document.getElementById('countdown-box').classList.remove('visible');
-  if (!ru) { est.className = 'evento-estado'; return; }
+  if (!ru) { 
+    est.className = 'evento-estado'; 
+    document.body.className = '';
+    return; 
+  }
+  
+  // Aplicar tema visual si existe
+  console.log('===== DEBUG TEMA =====');
+  console.log('1. ID seleccionado:', id);
+  console.log('2. Objeto ruleta:', ru);
+  console.log('3. Tema en objeto ru.tema:', ru.tema);
+  console.log('4. Tipo de ru.tema:', typeof ru.tema);
+  
+  const root = document.documentElement;
+  const bg = document.querySelector('.bg');
+  
+  const temas = {
+    default:       { oro: '#D4AF37', oroL: '#F5D76E', oroD: '#9A7B1A', bg: '#0A0A0F' },
+    san_valentin:  { oro: '#FF6B9D', oroL: '#FFB3CC', oroD: '#C2185B', bg: '#1a0011' },
+    dia_madres:    { oro: '#E91E8C', oroL: '#F8BBD9', oroD: '#880E4F', bg: '#1a0a15' },
+    mundial:       { oro: '#4CAF50', oroL: '#8BC34A', oroD: '#1B5E20', bg: '#0a120a' },
+    navidad:       { oro: '#FFD700', oroL: '#FFEB3B', oroD: '#F57F17', bg: '#0a1a0a' },
+    halloween:    { oro: '#FF6D00', oroL: '#FFE0B2', oroD: '#E65100', bg: '#0d0009' },
+    verano:        { oro: '#00BCD4', oroL: '#B2EBF2', oroD: '#006064', bg: '#001a1a' },
+  };
+  
+  const tieneTema = ru.tema && ru.tema !== 'null' && ru.tema !== null && ru.tema !== 'default' && ru.tema !== '';
+  console.log('5. tieneTema:', tieneTema);
+  console.log('5b. ru.tema value:', JSON.stringify(ru.tema));
+  const temaValido = temas[ru.tema];
+  console.log('6. temaValido:', temaValido);
+  
+  // Debug visual - mostrar en alert para确保 visibilidad
+  const oldOro = getComputedStyle(document.documentElement).getPropertyValue('--oro').trim();
+  
+  if (tieneTema && temaValido) {
+    console.log('7. Aplicando tema:', ru.tema);
+    // Solo aplicar la clase CSS - las variables ya están definidas en el CSS
+    document.body.className = 'tema-' + ru.tema;
+    
+    // Alert de debug
+    setTimeout(() => {
+      const newOro = getComputedStyle(document.documentElement).getPropertyValue('--oro').trim();
+      alert(`TEMA APLICADO!\n\ntema: ${ru.tema}\ntiene: ${tieneTema}\nvalido: ${!!temaValido}\noro antes: ${oldOro}\noro después: ${newOro}\nbody class: ${document.body.className}`);
+    }, 100);
+    
+    console.log('8. Body className después:', document.body.className);
+  } else {
+    console.log('7. NO se aplica tema - condiciones no cumplidas');
+    document.body.className = '';
+  }
+  console.log('===== FIN DEBUG =====');
+  
   const e = estadoRuleta(ru);
   document.getElementById('header-badge').textContent =
     e.tipo==='activo' ? '🟢 Evento Activo' : e.tipo==='pronto' ? '🔵 Próximamente' : '🔴 Evento Cerrado';
@@ -762,13 +869,50 @@ async function cargarPremios(id) {
 
     // Crear sectores "sin premio" proporcionales
     // Al menos 1 sector sin premio si sumProb < 100
-    const sinPremioCount = porcSinPremio > 0
-      ? Math.max(1, Math.round(porcSinPremio / (100 / (premiosReales.length + 2))))
-      : 0;
+    const sinPremioCount = premiosReales.length;
 
-    const textosSinPremio = ['¡Inténtalo!','¡Suerte!','Otra vez','¡Ánimo!'];
+    const textosSinPremio = [
+      '¡Inténtalo de nuevo!', '¡Sigue participando!', '¡Más suerte la próxima!',
+      '¡No te rindas!', '¡Casi lo logras!', '¡Suerte para la próxima!',
+      '¡No fue esta vez!', '¡Sigue intentándolo!', '¡La próxima será!',
+      '¡No te desanimes!', '¡Sigue participando!', '¡Casi, casi!',
+      '¡Sigue intentando!', '¡Casi lo logras!', '¡Suerte para Próximo!', 'Has Perdido', '¡Ánimo para Próximo!',
+      '¡Sigue intentando!', '¡La próxima será!', '¡No te rindas!', '¡Persevera!',
+      '¡A por la próxima!', '¡Mejor suerte mañana!', '¡Continúa participando!',
+      '¡El esfuerzo cuenta!', '¡No fue esta vez!', '¡Cada intento te acerca!',
+      '¡Vuelve a intentarlo!', '¡La constancia vence!', '¡Sigue adelante!',
+      '¡No pierdas la fe!', '¡Casi, casi!', '¡Por un pelo!', '¡Qué lástima!',
+      '¡Ups!', '¡Fail!', '¡No hubo suerte!', '¡Qué pena!', '¡Lo siento!',
+      '¡Ay no!', '¡Bummer!', '¡Chance!', '¡Otra vez!', '¡Ni con trampa!',
+      '¡Hasta el perro se asustó!', '¡La vida es así!', '¡No todo es ganar!',
+      '¡Al menos lo intentaste!', '¡Habrá que seguir!', '¡No siempre se gana!',
+      '¡Es parte del juego!', '¡A veces se gana, a veces se aprende!',
+      '¡El éxito está cerca!', '¡Sigue soñando!', '¡Tú puedes lograrlo!',
+      '¡No te desanimes!', '¡Cree en ti!', '¡Eres más fuerte!', '¡La victoria te espera!',
+      '¡Un paso más!', '😅 ¡Por poco!', '🙈 ¡No lo viste venir!', '🍀 ¡La próxima sale!',
+      '💪 ¡A seguir intentando!', '🎲 ¡Mala tirada!', '⚡ ¡La suerte no te alcanzó!',
+      '🌟 ¡Brillarás la próxima!', '✨ ¡Sigue participando!', '¡Fue un honor participar!',
+      '¡Gracias por jugar!', '¡Hasta la próxima!', '¡Te esperamos de vuelta!',
+      '¡No te rindas ahora!', '¡El mejor premio es participar!', '¡La experiencia vale!',
+      '¡Siempre hay una próxima vez!', '¡No fue suficiente!', '¡Tan cerca y tan lejos!',
+      '¡Rozaste la victoria!', '¡Estuviste a punto!', '¡Un suspiro te separó!',
+      '¡Milímetros!', '¡Por un segundo!', '¡El margen fue mínimo!', '¡La gloria te espera!',
+      '¡Tu momento llegará!', '¡La paciencia es clave!', '¡Resiste un poco más!',
+      '¡Vas por buen camino!', '¡No abandones!', '¡La perseverancia paga!',
+      '¡Sigue participando!', '¡Vuelve a intentarlo mañana!', '¡Hay más oportunidades!',
+      '¡No es el final!', '¡Esto apenas comienza!', '¡Lo importante es participar!',
+      '¡Disfrutaste el juego!', '¡La diversión está asegurada!', '¡Jugar ya es ganar!',
+      '¡El verdadero premio es la amistad!', '¡Ya vendrán tiempos mejores!',
+      '¡Las rachas se rompen!', '¡Tu racha positiva llegará!', '¡El éxito no es inmediato!',
+      '¡Los grandes logros toman tiempo!', '¡Sembrando para cosechar!', '¡Hoy siembras, mañana cosechas!'
+    ];
+
+    function obtenerTextoSinPremio() {
+      return textosSinPremio[Math.floor(Math.random() * textosSinPremio.length)];
+    }
+
     const sectoresSinPremio = Array.from({length: sinPremioCount}, (_,i) => ({
-      nombre: textosSinPremio[i % textosSinPremio.length],
+      nombre: obtenerTextoSinPremio() /*textosSinPremio[i % textosSinPremio.length]*/,
       _sinPremio: true,
     }));
 
