@@ -568,10 +568,10 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
         </div>
       </div>
 
-            <!-- ══ CORREOS ══ -->
+                  <!-- ══ CORREOS ══ -->
       <div class="modulo" id="mod-correos">
 
-        <!-- SELECTOR DE RULETA — paso obligatorio -->
+        <!-- SELECTOR DE RULETA -->
         <div class="tabla-wrap" style="margin-bottom:16px">
           <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
             <div style="font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--oro)">📧 Enviar invitaciones para:</div>
@@ -582,11 +582,11 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
           </div>
         </div>
 
-        <!-- STATS DE LA RULETA SELECCIONADA -->
+        <!-- STATS -->
         <div class="stats-row" id="stats-correos" style="display:none">
           <div class="stat-card" style="--accent:var(--azul)">
             <div class="stat-num" id="st-total-cli">—</div>
-            <div class="stat-label">Clientes registrados</div>
+            <div class="stat-label">Total clientes</div>
           </div>
           <div class="stat-card" style="--accent:var(--naranja)">
             <div class="stat-num" id="st-inv">—</div>
@@ -602,27 +602,25 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
           </div>
         </div>
 
-        <!-- PANEL VACÍO si no hay ruleta seleccionada -->
+        <!-- SIN RULETA SELECCIONADA -->
         <div id="correos-empty" style="text-align:center;padding:48px 24px;color:var(--txt-dd)">
           <div style="font-size:2.5rem;margin-bottom:12px;opacity:.3">📧</div>
           <div>Selecciona una ruleta para gestionar sus correos</div>
         </div>
 
-        <!-- ACCIONES — visible solo si hay ruleta seleccionada -->
+        <!-- ACCIONES (visible solo si hay ruleta) -->
         <div id="correos-acciones" style="display:none">
 
           <!-- ENVÍO MASIVO -->
           <div class="tabla-wrap" style="margin-bottom:14px">
             <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
               <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">📤 Envío masivo de invitaciones</div>
-              <div style="font-size:.82rem;color:var(--txt-dd)" id="desc-masivo">
+              <div style="font-size:.82rem;color:var(--txt-dd)">
                 Envía la invitación a todos los clientes con estatus "añadido" en lotes de 500.
               </div>
             </div>
             <div style="padding:16px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <div style="flex:1;min-width:200px">
-                <div id="preview-ruleta-masivo" style="font-size:.82rem;color:var(--oro);font-weight:600"></div>
-              </div>
+              <div id="preview-ruleta-masivo" style="flex:1;font-size:.82rem;color:var(--oro);font-weight:600;min-width:180px"></div>
               <button class="btn btn-primary" id="btn-masivo" style="white-space:nowrap" onclick="enviarMasivo()">
                 📧 Enviar invitaciones masivas
               </button>
@@ -633,16 +631,16 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
           <div class="tabla-wrap" style="margin-bottom:14px">
             <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
               <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">✉️ Envío individual</div>
-              <div style="font-size:.82rem;color:var(--txt-dd)">Enviar o reenviar la invitación a un cliente específico por su correo</div>
+              <div style="font-size:.82rem;color:var(--txt-dd)">Enviar o reenviar la invitación a un cliente por su correo electrónico</div>
             </div>
-            <div style="padding:16px 20px;display:flex;gap:10px;flex-wrap:wrap">
-              <input id="inp-reenvio-email" type="email" placeholder="correo@cliente.com"
-                style="flex:1;min-width:220px;background:var(--card2);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:9px 13px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s"
-                onfocus="this.style.borderColor='var(--oro)'" onblur="this.style.borderColor='var(--border)'"
-                onkeydown="if(event.key==='Enter')reenviarCorreo()">
-              <button class="btn btn-secondary" onclick="reenviarCorreo()" style="white-space:nowrap">
-                📨 Enviar
-              </button>
+            <div style="padding:16px 20px">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <input id="inp-reenvio-email" type="email" placeholder="correo@cliente.com"
+                  style="flex:1;min-width:220px;background:var(--card2);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:9px 13px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s"
+                  onfocus="this.style.borderColor='var(--oro)'" onblur="this.style.borderColor='var(--border)'"
+                  onkeydown="if(event.key==='Enter')reenviarCorreo()">
+                <button class="btn btn-primary" onclick="reenviarCorreo()" style="white-space:nowrap">📨 Enviar</button>
+              </div>
             </div>
           </div>
 
@@ -671,28 +669,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
 
         <div id="resultado-correo" style="margin-top:14px"></div>
       </div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap">
-          <div class="tabla-wrap" style="flex:1;min-width:280px">
-            <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-              <div style="font-weight:700;margin-bottom:4px">Envío masivo de invitaciones</div>
-              <div style="font-size:.82rem;color:var(--txt-dd)">Envía a todos los clientes con estatus "añadido" en lotes de 500</div>
-            </div>
-            <div style="padding:16px 20px">
-              <button class="btn btn-primary" style="width:100%" onclick="enviarMasivo()">📧 Enviar invitaciones masivas</button>
-            </div>
-          </div>
-          <div class="tabla-wrap" style="flex:1;min-width:280px">
-            <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-              <div style="font-weight:700;margin-bottom:4px">Reenvío individual</div>
-              <div style="font-size:.82rem;color:var(--txt-dd)">Reenviar correo a un cliente específico por ID</div>
-            </div>
-            <div style="padding:16px 20px;display:flex;gap:10px">
-              <input id="inp-reenvio-email" type="email" placeholder="correo@cliente.com" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--txt);border-radius:9px;padding:9px 13px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none">
-              <button class="btn btn-secondary" onclick="reenviarCorreo()">Reenviar</button>
-            </div>
-          </div>
-        </div>
-        <div id="resultado-correo" style="margin-top:14px"></div>
+
       </div>
 
     </div><!-- /content -->
@@ -780,7 +757,7 @@ function ir(mod) {
   }[mod] || mod;
   moduloActual = mod;
   if (mod === 'premios') cargarPremios(1);
-  if (mod === 'correos') { llenarSelectorCorreos(); cargarEstadoCorreos(); }
+  if (mod === 'correos') { llenarSelectorCorreos(); }
   if (mod === 'referidos') cargarReferidos(1);
   if (mod === 'encuestas') cargarEncuestas(1);
   if (mod === 'ganadores') llenarSelectReporte();
