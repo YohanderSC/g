@@ -308,6 +308,33 @@ async def reenviar_correo(cliente_id: int, db: Session = Depends(get_db)):
     return resultado
 
 
+@router.post(
+    "/correos/reenviar/email/",
+    summary="Reenviar correo por email (más fácil para admins)",
+    description="Reenvía el correo de invitación usando el email del cliente. Más fácil que buscar el ID."
+)
+async def reenviar_por_email(
+    email: str = Query(..., description="Email del cliente"),
+    db: Session = Depends(get_db)
+):
+    from app.services.correo_service import reenviar_correo as svc_reenviar
+
+    email_limpio = email.strip().lower()
+    cliente = db.query(Cliente).filter(Cliente.email == email_limpio).first()
+
+    if not cliente:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No se encontró ningún cliente con el email '{email}'."
+        )
+
+    resultado = await svc_reenviar(db, cliente.id)
+    return {
+        **resultado,
+        "email": cliente.email,
+    }
+
+
 # ─────────────────────────────────────────────────────────
 # ENDPOINT 7: HISTORIAL DE CORREOS DE UN CLIENTE
 # ─────────────────────────────────────────────────────────

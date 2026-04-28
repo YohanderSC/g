@@ -305,3 +305,112 @@ async def importar_clientes(
         errores     = errores,
         detalle     = detalle
     )
+
+"""
+=====================================================
+PARCHE 1 y 2 — Asignar cliente a ruleta + reenvío por email
+=====================================================
+INSTRUCCIÓN: Agregar estos endpoints a tus routers existentes.
+
+PARCHE 1 → agregar en app/routers/clientes.py
+PARCHE 2 → agregar en app/routers/correos.py (o donde tengas /correos/reenviar/)
+=====================================================
+"""
+
+# ═══════════════════════════════════════════════════════════
+# PARCHE 1 — app/routers/clientes.py
+# Agregar endpoint para asignar cliente a ruleta por email
+# ═══════════════════════════════════════════════════════════
+PARCHE_CLIENTES = '''
+# ── NUEVO: Asignar cliente a ruleta por email ─────────────
+@router.post(
+    "/asignar-ruleta/",
+    summary="Asignar cliente a una ruleta por email",
+    description="Vincula un cliente existente a una ruleta usando su email. Si el cliente no existe, lo crea automaticamente con un token unico."
+)
+def asignar_cliente_a_ruleta(
+    email:     str = Query(..., description="Email del cliente"),
+    ruleta_id: int = Query(..., description="ID de la ruleta"),
+    db: Session = Depends(get_db)
+):
+    import secrets
+    from app.models.models import Ruleta, EstatusCliente
+
+    # Verificar que la ruleta existe
+    ruleta = db.query(Ruleta).filter(Ruleta.id == ruleta_id).first()
+    if not ruleta:
+        raise HTTPException(status_code=404, detail=f"Ruleta {ruleta_id} no encontrada.")
+
+    email_limpio = email.strip().lower()
+
+    # Validar formato basico del email
+    if "@" not in email_limpio or "." not in email_limpio.split("@")[-1]:
+        raise HTTPException(status_code=400, detail=f"El email '{email}' no tiene un formato valido.")
+
+    # Buscar o crear el cliente
+    cliente = db.query(Cliente).filter(Cliente.email == email_limpio).first()
+    creado  = False
+
+    if not cliente:
+        token = secrets.token_urlsafe(32)[:32]
+        cliente = Cliente(
+            email    = email_limpio,
+            token    = token,
+            estatus  = EstatusCliente.anadido,
+        )
+        db.add(cliente)
+        db.flush()
+        creado = True
+
+    db.commit()
+    db.refresh(cliente)
+
+    return {
+        "mensaje":    "Cliente asignado correctamente" if not creado else "Cliente creado y asignado",
+        "creado":     creado,
+        "cliente_id": cliente.id,
+        "email":      cliente.email,
+        "ruleta_id":  ruleta_id,
+        "ruleta":     ruleta.nombre,
+    }
+'''
+
+# ═══════════════════════════════════════════════════════════
+# PARCHE 2 — Reenviar correo por email en vez de ID
+# Modificar en app/routers/correos.py (o donde esté /correos/reenviar/)
+# ═══════════════════════════════════════════════════════════
+PARCHE_CORREOS = '''
+# ── NUEVO: Reenviar correo por EMAIL (más fácil para el admin) ──
+@router.post(
+    "/reenviar/email/",
+    summary="Reenviar correo de invitacion por email del cliente",
+    description="Reenviar el correo de invitacion usando el email del cliente. Mas facil que buscar el ID."
+)
+async def reenviar_por_email(
+    email: str = Query(..., description="Email del cliente"),
+    db: Session = Depends(get_db)
+):
+    from app.models.models import Cliente
+
+    email_limpio = email.strip().lower()
+    cliente = db.query(Cliente).filter(Cliente.email == email_limpio).first()
+
+    if not cliente:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No se encontro ningun cliente con el email '{email}'."
+        )
+
+    from app.services.correo_service import reenviar_correo
+    resultado = await reenviar_correo(db, cliente.id)
+    return {
+        **resultado,
+        "email": cliente.email,
+    }
+'''
+
+print("=== PARCHE 1: Agregar en app/routers/clientes.py ===")
+print(PARCHE_CLIENTES)
+print("\n=== PARCHE 2: Agregar en app/routers/correos.py ===")
+print(PARCHE_CORREOS)
+
